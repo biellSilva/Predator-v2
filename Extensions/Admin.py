@@ -3,6 +3,7 @@ import discord
 import datetime
 import pytz
 import json
+import config
 
 from discord.ext import commands
 from discord import app_commands
@@ -11,54 +12,27 @@ from typing import Optional
 
 tz_brazil = pytz.timezone('America/Sao_Paulo')
 
-# cores
-roxo = 0x690FC3
-vermelho = 0xff0000
-
-# cargos
-gerente = 1000948421382897765
-mod = 1000948434460753940
-recrutador = 1000948440135639180
-staff = 1000948452496244736
-
-modTan = 1000948437048631316
-modTa = 1000948436176207994
-modTl = 1000948438269165648
-modTo = 1000948435287019561
-
-tan = 1000948462512263238
-ta = 1000948461342048296
-tl = 1000948463732805632
-to = 1000948460331225219
-
-# canais
-loja_command = 1036334097213165679
-dev = 1000948650668740640
-staff_command = 1000948639440572426
-channelstaff = 1000948779043803196
-
 
 class Registro(discord.ui.Modal, title='Registro de Punição'):
     warframe = discord.ui.TextInput(label='Warframe', required=False, placeholder='Nome#000')
     discord_id = discord.ui.TextInput(label='Discord', required=False, placeholder='Nome#000')
-    local = discord.ui.TextInput(label='Local', placeholder='Warframe/Discord', )
+    local = discord.ui.TextInput(label='Local', placeholder='Warframe/Discord')
     punicao = discord.ui.TextInput(label='Punição', placeholder='Mutado por 300 segundos / 5 minutos')
-    razao = discord.ui.TextInput(label='Razão', style=discord.TextStyle.paragraph)
+    razao = discord.ui.TextInput(label='Razão', style=discord.TextStyle.paragraph, placeholder='Ficar floodando o chat')
 
     async def on_submit(self, interaction: discord.Interaction):
 
         guild = interaction.guild
         user = interaction.user
 
-        dev_embed = guild.get_channel(1000948698995499028)
-        reg = guild.get_channel(1000948783351345172)
+        dev_embed = guild.get_channel(config.embed_test_dev)
+        reg = guild.get_channel(config.registro_de_punicao)
         em = discord.Embed(title='Registro de Punição',
-                           color=roxo,
+                           color=config.roxo,
                            description=f'**Warframe:** {self.warframe}\n'
                            f'**Discord:** {self.discord_id}\n'
                            f'**Local:** {self.local}\n'
-                           f'**Punição:** {self.tipo}\n'
-                           f'**Tempo:** {self.tempo}\n'
+                           f'**Punição:** {self.punicao}\n'
                            f'**Razão:** {self.razao}\n')
 
         em.set_thumbnail(url=guild.icon)
@@ -66,7 +40,7 @@ class Registro(discord.ui.Modal, title='Registro de Punição'):
         em.timestamp = datetime.datetime.now(tz=tz_brazil)
 
         await interaction.response.send_message(f'Registro enviado', embed=em, ephemeral=True)
-        await dev_embed.send(embed=em)
+        await reg.send(embed=em)
 
 
 class adminCommand(commands.GroupCog, name='staff'):
@@ -75,16 +49,16 @@ class adminCommand(commands.GroupCog, name='staff'):
         self.bot = bot
 
     @app_commands.command(name='registro')
-    @app_commands.checks.has_role(staff)
+    @app_commands.checks.has_role(config.Staff)
     async def registro(self, interaction: discord.Interaction):
 
         ''' Cria um registro de punição '''
 
         guild = interaction.guild
-        mod = guild.get_role(1000948434460753940)
-        gerente = guild.get_role(1000948421382897765)
-        lorde = guild.get_role(1000948420342714399)
-        lider = guild.get_role(1000948383659339808)
+        mod = guild.get_role(config.Moderador)
+        gerente = guild.get_role(config.Gerente)
+        lorde = guild.get_role(config.Lorde)
+        lider = guild.get_role(config.Lider)
 
         if (mod not in interaction.user.roles) and (gerente not in interaction.user.roles) and (lorde not in interaction.user.roles) and (lider not in interaction.user.roles):
             await interaction.response.send_message(f'Você não possui o cargo {mod.mention}', ephemeral=True)
@@ -93,11 +67,12 @@ class adminCommand(commands.GroupCog, name='staff'):
             await interaction.response.send_modal(Registro(timeout=None))
 
 
-    #@registro.error
-    #async def registro_error(self, interaction: discord.Interaction, err):
-    #    if isinstance(err, app_commands.MissingRole):
-    #        staff = interaction.guild.get_role(staff)
-    #        await interaction.response.send_message(f'Você não é um {staff.mention}', ephemeral=True)
+    @registro.error
+    async def registro_error(self, interaction: discord.Interaction, err):
+        if isinstance(err, app_commands.MissingRole):
+            staff = interaction.guild.get_role(config.Staff)
+            await interaction.response.send_message(f'Você não é um {staff.mention}', ephemeral=True)
+
 
     @app_commands.command(name='promoção')
     @app_commands.describe(member='Selecione um membro', role='Selecione um cargo', gerente_cargos='Cargo obrigatório caso membro se torne gerente')
@@ -118,7 +93,7 @@ class adminCommand(commands.GroupCog, name='staff'):
         Choice(name='Gerente de Builds', value='build'),
         Choice(name='Gerente de Desenvolvimento', value='dev')
     ])
-    @app_commands.checks.has_role(staff)
+    @app_commands.checks.has_role(config.Staff)
     async def promote(self, interaction: discord.Interaction, member: discord.Member, role: str, gerente_cargos: Optional[str]):
 
         ''' Adiciona ou promove um membro a Staff '''
@@ -126,41 +101,41 @@ class adminCommand(commands.GroupCog, name='staff'):
         guild = interaction.guild
         user = interaction.user
 
-        alteraçoesStaff = guild.get_channel(1000948779043803196)
-        embedTest = guild.get_channel(1000948698995499028)
+        alteraçoesStaff = guild.get_channel(config.alteraçoes_na_staff)
+        embedTest = guild.get_channel(config.embed_test_dev)
 
-        gerente = guild.get_role(1000948421382897765)
-        lorde = guild.get_role(1000948420342714399)
-        lider = guild.get_role(1000948383659339808)
+        gerente = guild.get_role(config.Gerente)
+        lorde = guild.get_role(config.Lorde)
+        lider = guild.get_role(config.Lider)
 
-        recrutador = guild.get_role(1000948440135639180)
-        mod = guild.get_role(1000948434460753940)
-        dec = guild.get_role(1000948439233867816)
-        staff = guild.get_role(1000948452496244736)
+        recrutador = guild.get_role(config.Recrutador)
+        mod = guild.get_role(config.Moderador)
+        dec = guild.get_role(config.Decorador)
+        staff = guild.get_role(config.Staff)
 
-        ger_mod = guild.get_role(1000948425396846653)
-        ger_rec = guild.get_role(1000948424872562748)
-        ger_dec = guild.get_role(1000948427607248976)
-        ger_sort = guild.get_role(1000948422867697704)
-        ger_mark = guild.get_role(1000948423920472074)
-        ger_event = guild.get_role(1000948428450308176)
-        ger_build = guild.get_role(1000948429276581959)
-        ger_dev = guild.get_role(1000948426768384130)
+        ger_mod = guild.get_role(config.Gerente_Moderação)
+        ger_rec = guild.get_role(config.Gerente_Recrutamento)
+        ger_dec = guild.get_role(config.Gerente_Decoração)
+        ger_sort = guild.get_role(config.Gerente_Sorteios)
+        ger_mark = guild.get_role(config.Gerente_Marketing)
+        ger_event = guild.get_role(config.Gerente_Eventos)
+        ger_build = guild.get_role(config.Gerente_Builds)
+        ger_dev = guild.get_role(config.Gerente_Desenvolvimento)
 
-        tan = guild.get_role(1000948462512263238)
-        ta = guild.get_role(1000948461342048296)
-        tl = guild.get_role(1000948463732805632)
-        to = guild.get_role(1000948460331225219)
+        tan = guild.get_role(config.andromeda)
+        ta = guild.get_role(config.aquila)
+        tl = guild.get_role(config.lyra)
+        to = guild.get_role(config.orion)
 
-        recTan = guild.get_role(1000948443025518672)
-        recTa = guild.get_role(1000948442010505286)
-        recTl = guild.get_role(1000948443923107872)
-        recTo = guild.get_role(1000948441024839690)
+        recTan = guild.get_role(config.Recrutador_Andromeda)
+        recTa = guild.get_role(config.Recrutador_Aquila)
+        recTl = guild.get_role(config.Recrutador_Lyra)
+        recTo = guild.get_role(config.Recrutador_Orion)
 
-        modTan = guild.get_role(1000948437048631316)
-        modTa = guild.get_role(1000948436176207994)
-        modTl = guild.get_role(1000948438269165648)
-        modTo = guild.get_role(1000948435287019561)
+        modTan = guild.get_role(config.Moderador_Andromeda)
+        modTa = guild.get_role(config.Moderador_Aquila)
+        modTl = guild.get_role(config.Moderador_Lyra)
+        modTo = guild.get_role(config.Moderador_Orion)
 
         if (gerente not in interaction.user.roles) and (lorde not in interaction.user.roles) and (lider not in interaction.user.roles):
             await interaction.response.send_message(
@@ -242,7 +217,7 @@ class adminCommand(commands.GroupCog, name='staff'):
                 cargo = dec
 
             promo = discord.Embed(title=f"Promovido",
-                                  color=roxo,
+                                  color=config.roxo,
                                   description=f"{member.mention} foi adicionado a {cargo.mention}")
             promo.set_footer(
                 text=f'Promovido por {user}', icon_url=f'{user.avatar}')
@@ -257,8 +232,10 @@ class adminCommand(commands.GroupCog, name='staff'):
     @promote.error
     async def promote_error(self, interaction: discord.Interaction, err):
         if isinstance(err, app_commands.MissingRole):
-            staff = interaction.guild.get_role(staff)
+            staff = interaction.guild.get_role(config.Staff)
             await interaction.response.send_message(f'Você não é um {staff.mention}', ephemeral=True)
+
+
 
     @app_commands.command(name='remoção')
     @app_commands.describe(member='Selecione um membro', role='Selecione um cargo', gerente_cargos='Cargo obrigatório caso membro seja um gerente')
@@ -279,7 +256,7 @@ class adminCommand(commands.GroupCog, name='staff'):
         Choice(name='Gerente de Builds', value='build'),
         Choice(name='Gerente de Desenvolvimento', value='dev')
     ])
-    @app_commands.checks.has_role(staff)
+    @app_commands.checks.has_role(config.Staff)
     async def demote(self, interaction: discord.Interaction, member: discord.Member, role: str, gerente_cargos: Optional[str]):
 
         ''' Remove um membro da Staff '''
@@ -287,41 +264,41 @@ class adminCommand(commands.GroupCog, name='staff'):
         guild = interaction.guild
         user = interaction.user
 
-        alteraçoesStaff = guild.get_channel(1000948779043803196)
-        embedTest = guild.get_channel(1000948698995499028)
+        alteraçoesStaff = guild.get_channel(config.alteraçoes_na_staff)
+        embedTest = guild.get_channel(config.embed_test_dev)
 
-        gerente = guild.get_role(1000948421382897765)
-        lorde = guild.get_role(1000948420342714399)
-        lider = guild.get_role(1000948383659339808)
+        gerente = guild.get_role(config.Gerente)
+        lorde = guild.get_role(config.Lorde)
+        lider = guild.get_role(config.Lider)
 
-        ger_mod = guild.get_role(1000948425396846653)
-        ger_rec = guild.get_role(1000948424872562748)
-        ger_dec = guild.get_role(1000948427607248976)
-        ger_sort = guild.get_role(1000948422867697704)
-        ger_mark = guild.get_role(1000948423920472074)
-        ger_event = guild.get_role(1000948428450308176)
+        ger_mod = guild.get_role(config.Gerente_Moderação)
+        ger_rec = guild.get_role(config.Gerente_Recrutamento)
+        ger_dec = guild.get_role(config.Gerente_Decoração)
+        ger_sort = guild.get_role(config.Gerente_Sorteios)
+        ger_mark = guild.get_role(config.Gerente_Marketing)
+        ger_event = guild.get_role(config.Gerente_Eventos)
         ger_build = guild.get_role(1000948429276581959)
-        ger_dev = guild.get_role(1000948426768384130)
+        ger_dev = guild.get_role(config.Gerente_Desenvolvimento)
 
-        recrutador = guild.get_role(1000948440135639180)
-        mod = guild.get_role(1000948434460753940)
-        dec = guild.get_role(1000948439233867816)
-        staff = guild.get_role(1000948452496244736)
+        recrutador = guild.get_role(config.Recrutador)
+        mod = guild.get_role(config.Moderador)
+        dec = guild.get_role(config.Decorador)
+        staff = guild.get_role(config.Staff)
 
-        tan = guild.get_role(1000948462512263238)
-        ta = guild.get_role(1000948461342048296)
-        tl = guild.get_role(1000948463732805632)
-        to = guild.get_role(1000948460331225219)
+        tan = guild.get_role(config.andromeda)
+        ta = guild.get_role(config.aquila)
+        tl = guild.get_role(config.lyra)
+        to = guild.get_role(config.orion)
 
-        recTan = guild.get_role(1000948443025518672)
-        recTa = guild.get_role(1000948442010505286)
-        recTl = guild.get_role(1000948443923107872)
-        recTo = guild.get_role(1000948441024839690)
+        recTan = guild.get_role(config.Recrutador_Andromeda)
+        recTa = guild.get_role(config.Recrutador_Aquila)
+        recTl = guild.get_role(config.Recrutador_Lyra)
+        recTo = guild.get_role(config.Recrutador_Orion)
 
-        modTan = guild.get_role(1000948437048631316)
-        modTa = guild.get_role(1000948436176207994)
-        modTl = guild.get_role(1000948438269165648)
-        modTo = guild.get_role(1000948435287019561)
+        modTan = guild.get_role(config.Moderador_Andromeda)
+        modTa = guild.get_role(config.Moderador_Aquila)
+        modTl = guild.get_role(config.Moderador_Lyra)
+        modTo = guild.get_role(config.Moderador_Orion)
 
         if (gerente and lorde and lider) not in interaction.user.roles:
             await interaction.response.send_message(
@@ -402,7 +379,7 @@ class adminCommand(commands.GroupCog, name='staff'):
                 cargo = dec
 
             promo = discord.Embed(title=f'Demote',
-                                  color=roxo,
+                                  color=config.roxo,
                                   description=f'{member.mention} foi removido de {cargo.mention}')
             promo.set_footer(
                 text=f'Removido por {interaction.user}', icon_url=f'{interaction.user.avatar}')
@@ -417,7 +394,7 @@ class adminCommand(commands.GroupCog, name='staff'):
 
     @demote.error
     async def demote_error(self, interaction: discord.Interaction, err: app_commands.errors.MissingRole):
-        staf = interaction.guild.get_role(staff)
+        staf = interaction.guild.get_role(config.Staff)
         await interaction.response.send_message(f'Você não é um {staf.mention}', ephemeral=True)
 
     @app_commands.command(name='recrutar')
@@ -428,7 +405,7 @@ class adminCommand(commands.GroupCog, name='staff'):
         Choice(name='Os Tenno de Lyra', value='Lyra'),
         Choice(name='Os Tenno de Orion', value='Orion')
     ])
-    @app_commands.checks.has_role(staff)
+    @app_commands.checks.has_role(config.Staff)
     async def recrutar(self, interaction: discord.Interaction, member: discord.Member, role: str):
 
         ''' Recruta um membro '''
@@ -440,10 +417,10 @@ class adminCommand(commands.GroupCog, name='staff'):
         membro = guild.get_role(1000948464869453905)
         participar = guild.get_role(1000948465800577044)
 
-        tan = guild.get_role(1000948462512263238)
-        ta = guild.get_role(1000948461342048296)
-        tl = guild.get_role(1000948463732805632)
-        to = guild.get_role(1000948460331225219)
+        tan = guild.get_role(config.andromeda)
+        ta = guild.get_role(config.aquila)
+        tl = guild.get_role(config.lyra)
+        to = guild.get_role(config.orion)
 
         if 'andromeda' == role.lower():
             cargo = tan
@@ -458,7 +435,7 @@ class adminCommand(commands.GroupCog, name='staff'):
             cargo = to
 
         recrutar = discord.Embed(title='Recrutar',
-                                 color=roxo,
+                                 color=config.roxo,
                                  description=f'{member.mention} foi adicionado a {cargo.mention}\n'
                                  f'{participar.mention} será removido em {timer}s\n\n')
         recrutar.set_thumbnail(url=interaction.guild.icon)
@@ -474,11 +451,13 @@ class adminCommand(commands.GroupCog, name='staff'):
 
     @recrutar.error
     async def recrutar_error(self, interaction: discord.Interaction, err: app_commands.errors.MissingRole):
-        staff = interaction.guild.get_role(staff)
+        staff = interaction.guild.get_role(config.Staff)
         await interaction.response.send_message(f'Você não é um {staff.mention}', ephemeral=True)
 
+
+
     @app_commands.command(name='adicionar')
-    @app_commands.checks.has_role(staff)
+    @app_commands.checks.has_role(config.Staff)
     @app_commands.describe(membro='Selecione um membro', valor='Informe a quantia, deve ser numeros inteiros')
     async def adicionar(self, interaction: discord.Interaction, membro: discord.Member, valor: int):
 
@@ -487,9 +466,9 @@ class adminCommand(commands.GroupCog, name='staff'):
         user = interaction.user
         guild = interaction.guild
 
-        mecanico = guild.get_role(1002376893166780487)
-        lorde = guild.get_role(1000948420342714399)
-        lider = guild.get_role(1000948383659339808)
+        mecanico = guild.get_role(config.mecanico)
+        lorde = guild.get_role(config.Lorde)
+        lider = guild.get_role(config.Lider)
 
         await open_account(membro)
         users = await get_bank_data()
@@ -498,8 +477,8 @@ class adminCommand(commands.GroupCog, name='staff'):
             await interaction.response.send_message(f'{user.display_name}, este comando é determinado a {lorde.mention} e {lider.mention}')
             return
 
-        if interaction.channel.id != loja_command and interaction.channel.id != staff_command and interaction.channel.id != dev:
-            await interaction.response.send_message(f'apenas no <#{staff_command}>', ephemeral=True)
+        if (interaction.channel.id != config.loja_comandos) and (interaction.channel.id != config.comandos_staff) and (interaction.channel.id != config.teste_dev):
+            await interaction.response.send_message(f'apenas no <#{config.comandos_staff}>', ephemeral=True)
             return
 
         if valor < 0:
@@ -507,7 +486,7 @@ class adminCommand(commands.GroupCog, name='staff'):
             return
 
         em = discord.Embed(title=f'Admin UCredits',
-                           color=roxo,
+                           color=config.roxo,
                            description=f'{user.display_name} enviou `{valor}` UCredits para {membro.mention}')
         em.set_thumbnail(
             url='https://cdn.discordapp.com/emojis/629264485273698325.webp')
@@ -523,11 +502,13 @@ class adminCommand(commands.GroupCog, name='staff'):
     @adicionar.error
     async def adicionar_error(self, interaction: discord.Interaction, err):
         if isinstance(err, app_commands.MissingRole):
-            staff = interaction.guild.get_role(staff)
+            staff = interaction.guild.get_role(config.Staff)
             await interaction.response.send_message(f'Você não é um {staff.mention}', ephemeral=True)
 
+
+
     @app_commands.command(name='remover')
-    @app_commands.checks.has_role(staff)
+    @app_commands.checks.has_role(config.Staff)
     @app_commands.describe(membro='Selecione um membro', valor='Informe a quantia, deve ser numeros inteiros')
     async def remover(self, interaction: discord.Interaction, membro: discord.Member, valor: int):
 
@@ -536,9 +517,9 @@ class adminCommand(commands.GroupCog, name='staff'):
         user = interaction.user
         guild = interaction.guild
 
-        mecanico = guild.get_role(1002376893166780487)
-        lorde = guild.get_role(1000948420342714399)
-        lider = guild.get_role(1000948383659339808)
+        mecanico = guild.get_role(config.mecanico)
+        lorde = guild.get_role(config.Lorde)
+        lider = guild.get_role(config.Lider)
 
         await open_account(membro)
         users = await get_bank_data()
@@ -547,8 +528,8 @@ class adminCommand(commands.GroupCog, name='staff'):
             await interaction.response.send_message(f'{user.display_name}, este comando é determinado a {lorde.mention} e {lider.mention}')
             return
 
-        if interaction.channel.id != loja_command and interaction.channel.id != staff_command and interaction.channel.id != dev:
-            await interaction.response.send_message(f'apenas no <#{staff_command}>', ephemeral=True)
+        if (interaction.channel.id != config.loja_comandos) and (interaction.channel.id != config.comandos_staff) and (interaction.channel.id != config.teste_dev):
+            await interaction.response.send_message(f'apenas no <#{config.comandos_staff}>', ephemeral=True)
             return
 
         if valor < 0:
@@ -556,7 +537,7 @@ class adminCommand(commands.GroupCog, name='staff'):
             return
 
         em = discord.Embed(title=f'Admin UCredits',
-                           color=roxo,
+                           color=config.roxo,
                            description=f'{user.display_name} retirou `{valor}` UCredits de {membro.mention}')
         em.set_thumbnail(
             url='https://cdn.discordapp.com/emojis/629264485273698325.webp')
@@ -571,11 +552,13 @@ class adminCommand(commands.GroupCog, name='staff'):
     @remover.error
     async def remover_error(self, interaction: discord.Interaction, err):
         if isinstance(err, app_commands.MissingRole):
-            staff = interaction.guild.get_role(staff)
+            staff = interaction.guild.get_role(config.Staff)
             await interaction.response.send_message(f'Você não é um {staff.mention}', ephemeral=True)
 
+
+
     @app_commands.command(name='cargo')
-    @app_commands.checks.has_role(staff)
+    @app_commands.checks.has_role(config.Staff)
     @app_commands.describe(membro='Selecione um membro', cargo_add='Informe o cargo que deve ser adicionado', cargo_rem='Informe o cargo que deve ser removido')
     async def cargo(self, interaction: discord.Interaction, membro: discord.Member, cargo_add: discord.Role, cargo_rem: Optional[discord.Role]):
 
@@ -584,9 +567,9 @@ class adminCommand(commands.GroupCog, name='staff'):
         guild = interaction.guild
         user = interaction.user
 
-        mecanico = guild.get_role(1002376893166780487)
-        lorde = guild.get_role(1000948420342714399)
-        lider = guild.get_role(1000948383659339808)
+        mecanico = guild.get_role(config.mecanico)
+        lorde = guild.get_role(config.Lorde)
+        lider = guild.get_role(config.Lider)
         nome = str(cargo_add.name)
         cor = str(cargo_add.color)
         criado = str(cargo_add.created_at)
@@ -595,8 +578,8 @@ class adminCommand(commands.GroupCog, name='staff'):
             await interaction.response.send_message(f'{user.display_name}, este comando é determinado a {lorde.mention} e {lider.mention}', ephemeral=True)
             return
 
-        if interaction.channel.id != staff_command and interaction.channel.id != dev:
-            await interaction.response.send_message(f'apenas no <#{staff_command}>', ephemeral=True)
+        if (interaction.channel.id != config.comandos_staff) and (interaction.channel.id != config.teste_dev):
+            await interaction.response.send_message(f'apenas no <#{config.comandos_staff}>', ephemeral=True)
             return
 
         if user.top_role.position < cargo_add.position:
@@ -604,20 +587,20 @@ class adminCommand(commands.GroupCog, name='staff'):
             return
 
         em = discord.Embed(title=f'Criação de cargo personalizado',
-                           color=roxo,
+                           color=config.roxo,
                            description=f'Olá {membro.mention}!\nSeu cargo personalizado em **{guild}** foi criado e adicionado a você.\n\n'
                                        f'Nome: {nome} \nCor: {cor}\nCriado em: {criado}')
-        em.set_thumbnail(
-            url='https://cdn.discordapp.com/emojis/629264485273698325.webp')
+
+        em.set_thumbnail(url='https://cdn.discordapp.com/emojis/629264485273698325.webp')
         em.set_footer(text=f'Registrado em {guild}', icon_url=f'{guild.icon}')
         em.timestamp = datetime.datetime.now(tz=tz_brazil)
 
         em1 = discord.Embed(title=f'Criação de cargo personalizado',
-                            color=roxo,
+                            color=config.roxo,
                             description=f'{user.mention}, {membro.mention} foi notificado e adicionado a {cargo_add.mention}.\n\n'
                             f'Nome: {nome}\nCor: {cor}\nCriado em: {criado}')
-        em1.set_thumbnail(
-            url='https://cdn.discordapp.com/emojis/629264485273698325.webp')
+
+        em1.set_thumbnail(url='https://cdn.discordapp.com/emojis/629264485273698325.webp')
         em1.set_footer(text=f'Registrado em {guild}', icon_url=f'{guild.icon}')
         em.timestamp = datetime.datetime.now(tz=tz_brazil)
 
@@ -627,11 +610,12 @@ class adminCommand(commands.GroupCog, name='staff'):
         await interaction.response.send_message(embed=em1)
         await membro.send(embed=em)
 
-    @app_commands.command(name='clear')
-    @app_commands.checks.has_role(staff)
-    @app_commands.describe(valor='Quantas mensagens devo apagar?')
-    async def clear(self, interaction: discord.Interaction, valor: int):
-        print()
+    @cargo.error
+    async def cargo_error(self, interaction: discord.Interaction, err):
+        if isinstance(err, app_commands.MissingRole):
+            staff = interaction.guild.get_role(config.Staff)
+            await interaction.response.send_message(f'Você não é um {staff.mention}', ephemeral=True)
+
 
 
 async def open_account(user):
