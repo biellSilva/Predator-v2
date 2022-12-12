@@ -14,11 +14,15 @@ tz_brazil = pytz.timezone('America/Sao_Paulo')
 
 
 class Registro(discord.ui.Modal, title='Registro de Punição'):
-    warframe = discord.ui.TextInput(label='Warframe', required=False, placeholder='Nome#000')
-    discord_id = discord.ui.TextInput(label='Discord', required=False, placeholder='Nome#000')
+    warframe = discord.ui.TextInput(
+        label='Warframe', required=False, placeholder='Nome#000')
+    discord_id = discord.ui.TextInput(
+        label='Discord', required=False, placeholder='Nome#000')
     local = discord.ui.TextInput(label='Local', placeholder='Warframe/Discord')
-    punicao = discord.ui.TextInput(label='Punição', placeholder='Mutado por 300 segundos / 5 minutos')
-    razao = discord.ui.TextInput(label='Razão', style=discord.TextStyle.paragraph, placeholder='Ficar floodando o chat')
+    punicao = discord.ui.TextInput(
+        label='Punição', placeholder='Mutado por 300 segundos / 5 minutos')
+    razao = discord.ui.TextInput(
+        label='Razão', style=discord.TextStyle.paragraph, placeholder='Ficar floodando o chat')
 
     async def on_submit(self, interaction: discord.Interaction):
 
@@ -66,13 +70,11 @@ class adminCommand(commands.GroupCog, name='staff'):
         else:
             await interaction.response.send_modal(Registro(timeout=None))
 
-
     @registro.error
     async def registro_error(self, interaction: discord.Interaction, err):
         if isinstance(err, app_commands.MissingRole):
             staff = interaction.guild.get_role(config.Staff)
             await interaction.response.send_message(f'Você não é um {staff.mention}', ephemeral=True)
-
 
     @app_commands.command(name='promoção')
     @app_commands.describe(member='Selecione um membro', role='Selecione um cargo', gerente_cargos='Cargo obrigatório caso membro se torne gerente')
@@ -235,8 +237,6 @@ class adminCommand(commands.GroupCog, name='staff'):
             staff = interaction.guild.get_role(config.Staff)
             await interaction.response.send_message(f'Você não é um {staff.mention}', ephemeral=True)
 
-
-
     @app_commands.command(name='remoção')
     @app_commands.describe(member='Selecione um membro', role='Selecione um cargo', gerente_cargos='Cargo obrigatório caso membro seja um gerente')
     @app_commands.choices(role=[
@@ -277,7 +277,7 @@ class adminCommand(commands.GroupCog, name='staff'):
         ger_sort = guild.get_role(config.Gerente_Sorteios)
         ger_mark = guild.get_role(config.Gerente_Marketing)
         ger_event = guild.get_role(config.Gerente_Eventos)
-        ger_build = guild.get_role(1000948429276581959)
+        ger_build = guild.get_role(config.Gerente_Builds)
         ger_dev = guild.get_role(config.Gerente_Desenvolvimento)
 
         recrutador = guild.get_role(config.Recrutador)
@@ -454,8 +454,6 @@ class adminCommand(commands.GroupCog, name='staff'):
         staff = interaction.guild.get_role(config.Staff)
         await interaction.response.send_message(f'Você não é um {staff.mention}', ephemeral=True)
 
-
-
     @app_commands.command(name='adicionar')
     @app_commands.checks.has_role(config.Staff)
     @app_commands.describe(membro='Selecione um membro', valor='Informe a quantia, deve ser numeros inteiros')
@@ -505,8 +503,6 @@ class adminCommand(commands.GroupCog, name='staff'):
             staff = interaction.guild.get_role(config.Staff)
             await interaction.response.send_message(f'Você não é um {staff.mention}', ephemeral=True)
 
-
-
     @app_commands.command(name='remover')
     @app_commands.checks.has_role(config.Staff)
     @app_commands.describe(membro='Selecione um membro', valor='Informe a quantia, deve ser numeros inteiros')
@@ -555,8 +551,6 @@ class adminCommand(commands.GroupCog, name='staff'):
             staff = interaction.guild.get_role(config.Staff)
             await interaction.response.send_message(f'Você não é um {staff.mention}', ephemeral=True)
 
-
-
     @app_commands.command(name='cargo')
     @app_commands.checks.has_role(config.Staff)
     @app_commands.describe(membro='Selecione um membro', cargo_add='Informe o cargo que deve ser adicionado', cargo_rem='Informe o cargo que deve ser removido')
@@ -591,7 +585,8 @@ class adminCommand(commands.GroupCog, name='staff'):
                            description=f'Olá {membro.mention}!\nSeu cargo personalizado em **{guild}** foi criado e adicionado a você.\n\n'
                                        f'Nome: {nome} \nCor: {cor}\nCriado em: {criado}')
 
-        em.set_thumbnail(url='https://cdn.discordapp.com/emojis/629264485273698325.webp')
+        em.set_thumbnail(
+            url='https://cdn.discordapp.com/emojis/629264485273698325.webp')
         em.set_footer(text=f'Registrado em {guild}', icon_url=f'{guild.icon}')
         em.timestamp = datetime.datetime.now(tz=tz_brazil)
 
@@ -600,7 +595,8 @@ class adminCommand(commands.GroupCog, name='staff'):
                             description=f'{user.mention}, {membro.mention} foi notificado e adicionado a {cargo_add.mention}.\n\n'
                             f'Nome: {nome}\nCor: {cor}\nCriado em: {criado}')
 
-        em1.set_thumbnail(url='https://cdn.discordapp.com/emojis/629264485273698325.webp')
+        em1.set_thumbnail(
+            url='https://cdn.discordapp.com/emojis/629264485273698325.webp')
         em1.set_footer(text=f'Registrado em {guild}', icon_url=f'{guild.icon}')
         em.timestamp = datetime.datetime.now(tz=tz_brazil)
 
@@ -615,7 +611,6 @@ class adminCommand(commands.GroupCog, name='staff'):
         if isinstance(err, app_commands.MissingRole):
             staff = interaction.guild.get_role(config.Staff)
             await interaction.response.send_message(f'Você não é um {staff.mention}', ephemeral=True)
-
 
 
 async def open_account(user):

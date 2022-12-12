@@ -5,6 +5,7 @@ import random
 import os
 import pytz
 import requests
+import config
 
 from discord.ext import commands
 from discord import app_commands
@@ -13,11 +14,6 @@ from bs4 import BeautifulSoup
 
 
 tz_brazil = pytz.timezone('America/Sao_Paulo')
-
-roxo = 0x690FC3
-vermelho = 0xff0000
-
-comandos = 1000948732235362325
 
 images = os.path.join(os.getcwd(), "./imagens/wiki")
 
@@ -34,7 +30,7 @@ class openCommands(commands.Cog):
 
     @app_commands.command(name='avatar')
     @app_commands.describe(member='Selecione um membro')
-    async def avatar_function(self, interaction: discord.Interaction, member: Optional[discord.Member]):
+    async def avatar(self, interaction: discord.Interaction, member: Optional[discord.Member]):
 
         ''' Envia o avatar/icone de um membro '''
 
@@ -43,7 +39,7 @@ class openCommands(commands.Cog):
         if member == None:
 
             em = discord.Embed(
-                title=f'Avatar de {user.display_name}', color=roxo)
+                title=f'Avatar de {user.display_name}', color=config.roxo)
             em.set_image(url=user.display_avatar)
             em.set_footer(text=f'Autor: {user}')
             em.timestamp = datetime.datetime.now(tz=tz_brazil)
@@ -51,7 +47,7 @@ class openCommands(commands.Cog):
 
         else:
             em = discord.Embed(
-                title=f'Avatar de {member.display_name}', color=roxo)
+                title=f'Avatar de {member.display_name}', color=config.roxo)
             em.set_image(url=member.display_avatar)
             em.set_footer(text=f'Autor: {user}')
             em.timestamp = datetime.datetime.now(tz=tz_brazil)
@@ -88,13 +84,11 @@ class openCommands(commands.Cog):
                           'Entrou na defesa usando slow Nova', 'Jogou de Inaros', 'Mencionou o Conclave', 'Usa magnético na Astilla', 'Pegou build no Overframe', 'Postou build de Youtuber',
                           'Negou a Segunda Guerra', 'Não louvou nosso Lorde e Salvador\n||não me pergunte quem é, não faço ideia||', 'Escuta Pablo pela manhã', 'Ousou comprar platina',
                           'Colocou açucar no café', 'Perguntou se tinha Adoçante', 'Escondeu o controle da TV', 'Esqueceu de alimentar o Kubrow', 'Joga League of Legends', 'Falou de Futebol',
-                          'Não fez carinho no Kavat', 'Reclamou de uma drop rate "baixa" mas na verdade era 10%', 'Postou o proibidíssimo gif do Elon Musk', 'Sugeriu emote que não era de Warframe',
-                          'Pintou as paredes do Andromeda de verde', 'Pixou o dojo do Lyra com "Aquila esteve aqui"', 'Colocou adesivos de "Vote no Orion" nas janelas do Aquila',
-                          'Tentou convencer um Moderador do Orion para se juntar ao Andromeda', 'Esse mono Inaros pisou na merda do meu pé!', 'Achou a Copa do mundo boa. Não me importa qual foi',
-                          'Removeu o 2 da Wisp', 'Gloom na Nova speed', 'Trocou o 2 da Saryn', 'Tirou o 3 do Nezha']
+                          'Não fez carinho no Kavat', 'Reclamou de uma drop rate "baixa" mas na verdade era 10%', 'Postou o proibidíssimo gif do Elon Musk', 'Sugeriu emote que não era de Warframe', 'Pintou as paredes do Andromeda de verde', 'Pixou o dojo do Lyra com "Aquila esteve aqui"', 'Colocou adesivos de "Vote no Orion" nas janelas do Aquila',
+                          'Tentou convencer um Moderador do Orion para se juntar ao Andromeda', 'Esse mono Inaros pisou na merda do meu pé!', 'Achou a Copa do mundo boa. Não me importa qual foi', 'Removeu o 2 da Wisp', 'Gloom na Nova speed', 'Trocou o 2 da Saryn', 'Tirou o 3 do Nezha']
 
             em = discord.Embed(title='Registro de Punição',
-                               color=roxo,
+                               color=config.roxo,
                                description=f'{user.display_name} baniu {member.mention} do servidor!\n'
                                f'Razão: {random.choice(reasonList)}')
             em.set_thumbnail(
@@ -107,7 +101,7 @@ class openCommands(commands.Cog):
 
         else:
             em = discord.Embed(title='Registro de Punição',
-                               color=roxo,
+                               color=config.roxo,
                                description=f'{user.display_name} baniu {member.mention} do servidor!\n'
                                f'Razão: {reason}')
 
@@ -119,21 +113,32 @@ class openCommands(commands.Cog):
 
             await interaction.response.send_message(embed=em)
 
-    @app_commands.command(name='wikia')
-    async def wikia(self, interaction: discord.Interaction):
+    @commands.hybrid_command(name='wikia', with_app_command=True)
+    async def wikia(self, ctx):
 
         ''' Envia uma imagem aleatoria relacionada a wiki'''
 
-        await interaction.response.send_message(file=discord.File(arquivoWiki()))
+        if ctx.message.reference:
+            msg = ctx.channel.get_partial_message(ctx.message.reference.message_id)
+            await msg.reply(file=discord.File(arquivoWiki()))
+            return
 
-    @app_commands.command(name='wiki')
+        await ctx.send(file=discord.File(arquivoWiki()))
+
+    @commands.hybrid_command(name='wiki', with_app_command=True)
     @app_commands.describe(pesquisa='O que deseja pesquisar?')
-    async def wiki(self, interaction: discord.Interaction, pesquisa: str):
+    async def wiki(self, ctx, pesquisa: str):
 
         '''   Pesquisa algo em warframe.fandom.com    '''
 
-        guild = interaction.guild
-        await interaction.response.send_message('me dá um segundinho...')
+        guild = ctx.guild
+
+        if ctx.message.reference:
+            msg = ctx.channel.get_partial_message(ctx.message.reference.message_id)
+            msg1 = await msg.reply('me dá um segundinho...')
+            msg = ctx.channel.get_partial_message(msg1.id)
+        else:
+            msg = await ctx.send('me dá um segundinho...')
 
         res = requests.get('https://warframe.fandom.com/wiki/Special:Search?query=' + pesquisa)
         soup = BeautifulSoup(res.text, 'html.parser')
@@ -157,7 +162,7 @@ class openCommands(commands.Cog):
         link_5 = search[4].get('href')
 
         em = discord.Embed(title=f'{pesquisa}',
-                           color=roxo,
+                           color=config.roxo,
                            description=f'[{title_1}]({link_1})\n'
                            f'[{title_2}]({link_2})\n'
                            f'[{title_3}]({link_3})\n'
@@ -167,13 +172,13 @@ class openCommands(commands.Cog):
         em.set_footer(text=guild.name, icon_url=guild.icon)
         em.timestamp = datetime.datetime.now(tz=tz_brazil)
 
-        await interaction.edit_original_response(content='', embed=em)
+        await msg.edit(content='', embed=em)
         return
 
     @wiki.error
-    async def wiki_error(self, interaction: discord.Interaction, err):
+    async def wiki_error(self, ctx, err):
         if isinstance(err, ConnectionError):
-            await interaction.response.send_message('Ocorreu uma falha de conexão com warframe.fandom.com, tente novamente')
+            await ctx.send('Ocorreu uma falha de conexão com warframe.fandom.com\nTente novamente')
             return
 
     @app_commands.command(name='ola')
