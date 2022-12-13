@@ -2,6 +2,7 @@ import discord
 import datetime
 import pytz
 import json
+import config
 
 from discord.ext import commands
 from discord import app_commands
@@ -10,12 +11,6 @@ from typing import Optional, Union
 from discord.utils import get
 
 tz_brazil = pytz.timezone('America/Sao_Paulo')
-
-# cores
-roxo = 0x690FC3
-vermelho = 0xff0000
-
-lorde = 1000948420342714399
 
 
 @app_commands.guild_only()
@@ -38,10 +33,10 @@ class Voice(commands.GroupCog, name='voice'):
         guild = interaction.guild
         user = interaction.user
 
-        categoria = get(guild.categories, id=1000948586030309506)
-        comandos = guild.get_channel(1035798856094449674)
-        member = guild.get_role(1000948464869453905)
-        visit = guild.get_role(1000948466958209155)
+        categoria = get(guild.categories, id=config.voice_categoria)
+        voice_comandos = guild.get_channel(config.voice_comandos)
+        member = guild.get_role(config.membro)
+        visit = guild.get_role(config.visitante)
 
         await open_account(user)
         users = await get_data()
@@ -49,7 +44,7 @@ class Voice(commands.GroupCog, name='voice'):
 
         if sala != 0:
             sala = guild.get_channel(sala)
-            em = discord.Embed(color=roxo,
+            em = discord.Embed(color=config.roxo,
                                description=f'{user.mention}, você já possui uma sala: {sala.mention}\n'
                                f'Use `/voice config` caso queira alterá-la')
             em.set_footer(
@@ -70,7 +65,7 @@ class Voice(commands.GroupCog, name='voice'):
 
                 await voip.set_permissions(user, overwrite=perms)
 
-                em = discord.Embed(color=roxo,
+                em = discord.Embed(color=config.roxo,
                                    description=f'{user.display_name}, seu canal de voz foi criado na configuração privada\n'
                                    'É permitido que altere o nome da sala para algo que goste, mas o que está entre `[]` não deve ser alterado\n'
                                    f'{voip.mention}')
@@ -106,7 +101,7 @@ class Voice(commands.GroupCog, name='voice'):
                 await voip.set_permissions(member, overwrite=permsMember)
                 await voip.set_permissions(visit, overwrite=permsVisit)
 
-                em = discord.Embed(color=roxo,
+                em = discord.Embed(color=config.roxo,
                                    description=f'{user.mention}, seu canal de voz foi criado na configuração pública\n'
                                    'Ao sair da sala ela será apagada\n'
                                    f'{voip.mention}')
@@ -121,7 +116,7 @@ class Voice(commands.GroupCog, name='voice'):
                     json.dump(users, f, indent=4)
 
                 await interaction.response.defer(embed=em, ephemeral=True)
-                await comandos.send(embed=em)
+                await voice_comandos.send(embed=em)
 
     @app_commands.command(name='config')
     @app_commands.describe(tipo='Adicionar/Remover o acesso livre do membro. Deletar: Apaga sua sala de voz', membro='Adicionar/Remover um membro ou cargo')
@@ -147,7 +142,7 @@ class Voice(commands.GroupCog, name='voice'):
                 await sala.set_permissions(membro, overwrite=perms)
 
                 em = discord.Embed(
-                    color=roxo, description=f'{membro.mention} foi adicionado a seu canal: {sala.mention}')
+                    color=config.roxo, description=f'{membro.mention} foi adicionado a seu canal: {sala.mention}')
                 em.set_footer(
                     text=f'Registrado em {guild}', icon_url=f'{guild.icon}')
                 em.timestamp = datetime.datetime.now(tz=tz_brazil)
@@ -163,7 +158,7 @@ class Voice(commands.GroupCog, name='voice'):
                 await sala.set_permissions(membro, overwrite=perms)
 
                 em = discord.Embed(
-                    color=roxo, description=f'{membro.display_name} foi removido de seu canal: {sala.mention}')
+                    color=config.roxo, description=f'{membro.display_name} foi removido de seu canal: {sala.mention}')
                 em.set_footer(
                     text=f'Registrado em {guild}', icon_url=f'{guild.icon}')
                 em.timestamp = datetime.datetime.now(tz=tz_brazil)
@@ -173,7 +168,7 @@ class Voice(commands.GroupCog, name='voice'):
                 await interaction.response.send_message(f'{user.display_name}, você esqueceu de informar o membro', ephemeral=True)
 
         if 'del' in tipo:
-            em = discord.Embed(color=roxo,
+            em = discord.Embed(color=config.roxo,
                                description=f'{user.display_name}, sua sala foi deletada como pediu.\n{sala.mention}')
             em.set_footer(text=f'Registrado em {guild}',
                           icon_url=f'{guild.icon}')
@@ -194,14 +189,14 @@ class Voice(commands.GroupCog, name='voice'):
 
     @app_commands.command(name='staff')
     @app_commands.describe(membro='Remove a sala do membro')
-    @app_commands.checks.has_role(lorde)
+    @app_commands.checks.has_role(config.Lorde)
     async def staff_remove(self, interaction: discord.Interaction, membro: discord.Member):
 
         '''Reseta o ID de voice privado'''
 
         guild = interaction.guild
 
-        em = discord.Embed(color=roxo,
+        em = discord.Embed(color=config.roxo,
                            description=f'{membro.display_name}, teve seu id de sala resetado')
         em.set_footer(text=f'Registrado em {guild}',
                       icon_url=f'{guild.icon}')
@@ -218,15 +213,15 @@ class Voice(commands.GroupCog, name='voice'):
     @staff_remove.error
     async def staff_remove_error(self, interaction: discord.Interaction, err):
         if isinstance(err, app_commands.MissingRole):
-            lorde1 = interaction.guild.get_role(lorde)
-            await interaction.response.send_message(f'Você não é um {lorde1.mention}', ephemeral=True)
+            lorde = interaction.guild.get_role(config.Lorde)
+            await interaction.response.send_message(f'Você não é um {lorde.mention}', ephemeral=True)
 
 
     @commands.Cog.listener()
     async def on_voice_state_update(self, member, before, after):
-        guild = self.bot.get_guild(272908359823261708)
+        guild = self.bot.get_guild(config.uniao)
+
         try:
-            
             users = await get_data()
             sala = users[str(member.id)]['sala']
             privado = users[str(member.id)]['privado']
@@ -238,13 +233,13 @@ class Voice(commands.GroupCog, name='voice'):
                 if after.channel is None or (before.channel is not None and after.channel is not None):
                     if before.channel.id == sala:
                         canal = guild.get_channel(sala)
-                        comandos = guild.get_channel(1035798856094449674)
+                        voice_comandos = guild.get_channel(config.voice_comandos)
 
-                        em = discord.Embed(color=roxo, description=f'{member.mention}, seu canal de voz público foi deletado pois você o deixou')
+                        em = discord.Embed(color=config.roxo, description=f'{member.mention}, seu canal de voz público foi deletado pois você o deixou')
                         em.set_footer(text=f'Registrado em {guild}', icon_url=f'{guild.icon}')
                         em.timestamp = datetime.datetime.now(tz=tz_brazil)
 
-                        await comandos.send(embed=em)
+                        await voice_comandos.send(embed=em)
                         await canal.delete()
 
                         sala = users[str(member.id)]['sala'] = 0

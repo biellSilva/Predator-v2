@@ -5,6 +5,7 @@ import random
 import json
 import os
 import pytz
+import config
 
 from time import time
 from discord.ext import commands
@@ -22,24 +23,12 @@ tz_brazil = pytz.timezone('America/Sao_Paulo')
 cd_mapping = commands.CooldownMapping.from_cooldown(
     1, 86400, commands.BucketType.user)
 
-#   cores
-roxo = 0x690FC3
-
-#   cargos
-staff = 123
-
-#   canais
-staff_command = 1000948639440572426
-loja_command = 1036334097213165679
-comand = 1000948732235362325
-dev = 1000948650668740640
-
 
 class Personalizado(discord.ui.Modal, title='Compra de Cargo Personalizado'):
-    nome = discord.ui.TextInput(label='Nome')
-    cor = discord.ui.TextInput(label='Cor')
-    mencionavel = discord.ui.TextInput(label='Mencionavel', required=False)
-    icone = discord.ui.TextInput(label='Icone', required=False)
+    nome = discord.ui.TextInput(label='Nome', placeholder='Dumb Dev')
+    cor = discord.ui.TextInput(label='Cor', placeholder='hex: #121212')
+    mencionavel = discord.ui.TextInput(label='Mencionavel', required=False, placeholder='Sim/Não', default='Sim')
+    icone = discord.ui.TextInput(label='Icone', required=False, placeholder='https://')
 
     async def on_submit(self, interaction: discord.Interaction):
         guild = interaction.guild
@@ -48,7 +37,7 @@ class Personalizado(discord.ui.Modal, title='Compra de Cargo Personalizado'):
         form = guild.get_channel(1021369373782454292)
 
         em = discord.Embed(title='Compra de Cargo Personalizado',
-                           color=roxo,
+                           color=config.roxo,
                            description=f'**Nome:** {self.nome}\n'
                            f'**Cor:** {self.cor}\n'
                            f'**Mencionavel:** {self.mencionavel}\n'
@@ -128,11 +117,11 @@ class Economia(commands.Cog):
         with open('./json/bank.json', 'w') as f:
             json.dump(users, f, indent=4)
 
-        guild = self.bot.get_guild(272908359823261708)
-        log = guild.get_channel(1036334382518108240)
+        guild = self.bot.get_guild(config.uniao)
+        log = guild.get_channel(config.loja_log)
 
         em = discord.Embed(title='Log',
-                           color=roxo,
+                           color=config.roxo,
                            description=f'Mensagem: {user.mention} recebeu `{valor}`')
         em.timestamp = datetime.datetime.now(tz=tz_brazil)
         if user.avatar != None:
@@ -144,8 +133,8 @@ class Economia(commands.Cog):
     @commands.Cog.listener()
     async def on_voice_state_update(self, member, before, after):
 
-        guild = self.bot.get_guild(272908359823261708)
-        log = guild.get_channel(1036334382518108240)
+        guild = self.bot.get_guild(config.uniao)
+        log = guild.get_channel(config.loja_log)
 
         if member.bot:
             return
@@ -156,14 +145,8 @@ class Economia(commands.Cog):
         if after.afk:
             return
 
-        if after.self_mute == True or after.self_deaf == True or after.mute == True or after.deaf == True:
-            return
-
-        if before.self_stream == True or before.self_video == True:
-            return
-
         while after.channel is not None and (after.self_mute == False or after.self_deaf == False or after.mute == False or after.deaf == False):
-            if before is not None and after.channel is not None:
+            if before is not None or (after.self_stream == True or after.self_video == True) or after.afk:
                 break
 
             user = member
@@ -177,7 +160,7 @@ class Economia(commands.Cog):
                 json.dump(users, f, indent=4)
 
             em = discord.Embed(title=f'Log',
-                               color=roxo,
+                               color=config.roxo,
                                description=f'Voice Stream: {member.mention} recebeu `{valor1}`')
             em.timestamp = datetime.datetime.now(tz=tz_brazil)
             em.set_footer(text=f'{member}', icon_url=f'{member.avatar.url}')
@@ -203,7 +186,7 @@ class Economia(commands.Cog):
             cafe = users[str(membro.id)]['cafe']
 
             em = discord.Embed(title=f'Banco da {guild}',
-                               color=roxo,
+                               color=config.roxo,
                                description=f'Olá {user.display_name}!\nEstas são as informações de {membro.display_name}:\n')
             em.add_field(name='Saldo de UCredits', value=f'{bal}')
             em.set_thumbnail(url='https://cdn.discordapp.com/emojis/629264485273698325.webp')
@@ -222,7 +205,7 @@ class Economia(commands.Cog):
         cafe = users[str(user.id)]['cafe']
 
         em = discord.Embed(title=f'Banco da {guild}',
-                           color=roxo,
+                           color=config.roxo,
                            description=f'Olá {user.display_name}! Estas são suas informações:\n')
         em.add_field(name='Saldo de UCredits', value=f'{bal}')
         em.set_thumbnail(url='https://cdn.discordapp.com/emojis/629264485273698325.webp')
@@ -239,13 +222,13 @@ class Economia(commands.Cog):
 
         '''Login diário da Loja Cósmica'''
 
-        if (interaction.channel.id != loja_command) and (interaction.channel.id != staff_command) and (interaction.channel.id != dev):
-            await interaction.response.send_message(f'apenas em <#{loja_command}>', ephemeral=True)
+        if (interaction.channel.id != config.loja_comandos) and (interaction.channel.id != config.comandos_staff) and (interaction.channel.id != config.teste_dev):
+            await interaction.response.send_message(f'apenas em <#{config.loja_comandos}>', ephemeral=True)
             return
 
         guild = interaction.guild
         user = interaction.user
-        log = guild.get_channel(1036334382518108240)
+        log = guild.get_channel(config.loja_log)
 
         await open_account(user)
         users = await get_bank_data()
@@ -257,7 +240,7 @@ class Economia(commands.Cog):
             json.dump(users, f, indent=4)
 
         em = discord.Embed(title=f'Login Diário',
-                           color=roxo,
+                           color=config.roxo,
                            description=f'{user.display_name}, recebeu `{diario} UCredits` pelo login diário')
         em.set_thumbnail(url='https://cdn.discordapp.com/emojis/629264485273698325.webp')
         em.set_footer(text=f'Registrado em {guild}', icon_url=f'{guild.icon}')
@@ -265,7 +248,7 @@ class Economia(commands.Cog):
         await interaction.response.send_message(embed=em)
 
         em = discord.Embed(title=f'Login diário',
-                           color=roxo,
+                           color=config.roxo,
                            description=f'{user.mention} recebeu {diario}')
         em.timestamp = datetime.datetime.now(tz=tz_brazil)
         await log.send(embed=em)
@@ -285,10 +268,10 @@ class Economia(commands.Cog):
         user = interaction.user
         guild = interaction.guild
 
-        log = guild.get_channel(1036334382518108240)
+        log = guild.get_channel(config.loja_log)
 
-        if (interaction.channel.id != loja_command) and (interaction.channel.id != staff_command) and (interaction.channel.id != dev):
-            await interaction.response.send_message(f'apenas em <#{loja_command}>', ephemeral=True)
+        if (interaction.channel.id != config.loja_comandos) and (interaction.channel.id != config.comandos_staff) and (interaction.channel.id != config.teste_dev):
+            await interaction.response.send_message(f'apenas em <#{config.loja_comandos}>', ephemeral=True)
             return
         
         await open_account(membro)
@@ -305,7 +288,7 @@ class Economia(commands.Cog):
 
         if valor > bal:
             em = discord.Embed(title=f'Sem Saldo',
-                               color=roxo,
+                               color=config.roxo,
                                description=f'{user.display_name}, você não possui {valor} em UCredits')
             em.set_thumbnail(url='https://cdn.discordapp.com/emojis/629264485273698325.webp')
             em.set_footer(text=f'Registrado em {guild}', icon_url=f'{guild.icon}')
@@ -315,7 +298,7 @@ class Economia(commands.Cog):
             return
 
         em = discord.Embed(title=f'Doação de UCredits',
-                           color=roxo,
+                           color=config.roxo,
                            description=f'{user.display_name} enviou {valor} UCredits para {membro.mention}')
         em.set_thumbnail(url='https://cdn.discordapp.com/emojis/629264485273698325.webp')
         em.set_footer(text=f'Registrado em {guild}', icon_url=f'{guild.icon}')
@@ -336,8 +319,8 @@ class Economia(commands.Cog):
         user = interaction.user
         guild = interaction.guild
 
-        if (interaction.channel.id != loja_command) and (interaction.channel.id != staff_command) and (interaction.channel.id != dev):
-            await interaction.response.send_message(f'apenas no <#{loja_command}>', ephemeral=True)
+        if (interaction.channel.id != config.loja_comandos) and (interaction.channel.id != config.comandos_staff) and (interaction.channel.id != config.teste_dev):
+            await interaction.response.send_message(f'apenas no <#{config.loja_comandos}>', ephemeral=True)
             return
 
         # cargos padroes
@@ -371,7 +354,7 @@ class Economia(commands.Cog):
         cargo27 = guild.get_role(1000948395906703476)
 
         em = discord.Embed(title='Loja Cósmica',
-                           color=roxo,
+                           color=config.roxo,
                            description=f'**Cargos Padrões:**\n*custo: 2.000.000 UCredits*\n\n{cargo1.mention}\n{cargo2.mention}\n{cargo3.mention}\n{cargo4.mention}\n\n'
 
                            f'**Cargos Personalizados:**\n*custo: 5.000.000 UCredits*\n\n{cargo5.mention}\n{cargo6.mention}\n{cargo7.mention}\n{cargo8.mention}'
@@ -410,8 +393,8 @@ class Economia(commands.Cog):
         users = await get_bank_data()
         bal = await update_bank(user)
 
-        if (interaction.channel.id != loja_command) and (interaction.channel.id != staff_command) and (interaction.channel.id != dev):
-            await interaction.response.send_message(f'Apenas no <#{loja_command}>', ephemeral=True)
+        if (interaction.channel.id != config.loja_comandos) and (interaction.channel.id != config.comandos_staff) and (interaction.channel.id != config.teste_dev):
+            await interaction.response.send_message(f'Apenas no <#{config.loja_comandos}>', ephemeral=True)
             return
 
         if tipo == 'pad':
@@ -423,7 +406,7 @@ class Economia(commands.Cog):
             valor = 2000000
             if bal < valor:
                 em = discord.Embed(title=f'Sem Saldo',
-                                color=roxo,
+                                color=config.roxo,
                                 description=f'{user.display_avatar}, você não possui UCredits suficientes')
                 em.add_field(name='Balanço atual', value=f'{bal}')
                 em.set_thumbnail(url='https://cdn.discordapp.com/emojis/629264485273698325.webp')
@@ -446,7 +429,7 @@ class Economia(commands.Cog):
 
             await user.add_roles(cargo_add)
             
-            em = discord.Embed(title='Loja Cósmica', color=roxo,
+            em = discord.Embed(title='Loja Cósmica', color=config.roxo,
                                description=f'{user.display_name}, o cargo {cargo_add.mention} foi entregue conforme sua compra')
             em.set_thumbnail(url='https://cdn.discordapp.com/emojis/629264485273698325.webp')
             em.set_footer(text=f'{guild}', icon_url=f'{guild.icon}')
@@ -462,7 +445,7 @@ class Economia(commands.Cog):
             valor = 5000000
             if bal < valor:
                 em = discord.Embed(title=f'Sem Saldo',
-                                   color=roxo,
+                                   color=config.roxo,
                                    description=f'{user.display_avatar}, você não possui UCredits suficientes')
                 em.add_field(name='Balanço atual', value=f'{bal}')
                 em.set_thumbnail(url='https://cdn.discordapp.com/emojis/629264485273698325.webp')
@@ -479,8 +462,8 @@ class Economia(commands.Cog):
 
         '''Compra um cafézinho'''
 
-        if (interaction.channel.id != loja_command) and (interaction.channel.id != staff_command) and (interaction.channel.id != dev) and (interaction.channel.id != comand):
-            await interaction.response.send_message(f'Apenas no <#{comand}>, <#{staff_command}>, <#{loja_command}>', ephemeral=True)
+        if (interaction.channel.id != config.loja_comandos) and (interaction.channel.id != config.comandos_staff) and (interaction.channel.id != config.teste_dev) and (interaction.channel.id != config.comandos):
+            await interaction.response.send_message(f'Apenas no <#{config.comandos}>, <#{config.comandos_staff}>, <#{config.loja_comandos}>', ephemeral=True)
             return
 
         guild = interaction.guild
@@ -607,7 +590,7 @@ class Economia(commands.Cog):
         lines = sorted(data.items(), key=lambda k:getitem(k[1], 'banco'), reverse=True)
 
         guild = interaction.guild
-        em = discord.Embed(title='Banco Cósmico', color=roxo,
+        em = discord.Embed(title='Banco Cósmico', color=config.roxo,
                            description='Ranking dos 10 maiores acumuladores de UCredits')
         em.set_thumbnail(url='https://cdn.discordapp.com/emojis/629264485273698325.webp')
         em.set_footer(text=f'{guild}', icon_url=f'{guild.icon}')
@@ -638,7 +621,7 @@ async def open_account(user):
     else:
         users[str(user.id)] = {}
         users[str(user.id)]['nome'] = str(user.name)
-        users[str(user.id)]['banco'] = 0
+        users[str(user.id)]['banco'] = 75000
         users[str(user.id)]['cafe'] = 0
 
     with open('./json/bank.json', 'w') as f:

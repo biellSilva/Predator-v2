@@ -9,20 +9,17 @@ from discord.ext import commands
 from discord import app_commands
 from discord.app_commands import Choice
 from typing import Optional
+from time import time
 
 tz_brazil = pytz.timezone('America/Sao_Paulo')
 
 
 class Registro(discord.ui.Modal, title='Registro de Punição'):
-    warframe = discord.ui.TextInput(
-        label='Warframe', required=False, placeholder='Nome#000')
-    discord_id = discord.ui.TextInput(
-        label='Discord', required=False, placeholder='Nome#000')
+    warframe = discord.ui.TextInput(label='Warframe', required=False, placeholder='Nome#000')
+    discord_id = discord.ui.TextInput(label='Discord', required=False, placeholder='Nome#000')
     local = discord.ui.TextInput(label='Local', placeholder='Warframe/Discord')
-    punicao = discord.ui.TextInput(
-        label='Punição', placeholder='Mutado por 300 segundos / 5 minutos')
-    razao = discord.ui.TextInput(
-        label='Razão', style=discord.TextStyle.paragraph, placeholder='Ficar floodando o chat')
+    punicao = discord.ui.TextInput(label='Punição', placeholder='Mutado por 300 segundos / 5 minutos')
+    razao = discord.ui.TextInput(label='Razão', style=discord.TextStyle.paragraph, placeholder='Ficar floodando o chat')
 
     async def on_submit(self, interaction: discord.Interaction):
 
@@ -104,7 +101,7 @@ class adminCommand(commands.GroupCog, name='staff'):
         user = interaction.user
 
         alteraçoesStaff = guild.get_channel(config.alteraçoes_na_staff)
-        embedTest = guild.get_channel(config.embed_test_dev)
+        embedTest = guild.get_channel(config.test_dev_embed)
 
         gerente = guild.get_role(config.Gerente)
         lorde = guild.get_role(config.Lorde)
@@ -414,8 +411,8 @@ class adminCommand(commands.GroupCog, name='staff'):
 
         guild = interaction.guild
 
-        membro = guild.get_role(1000948464869453905)
-        participar = guild.get_role(1000948465800577044)
+        membro = guild.get_role(config.membro)
+        participar = guild.get_role(config.participar)
 
         tan = guild.get_role(config.andromeda)
         ta = guild.get_role(config.aquila)
@@ -437,10 +434,10 @@ class adminCommand(commands.GroupCog, name='staff'):
         recrutar = discord.Embed(title='Recrutar',
                                  color=config.roxo,
                                  description=f'{member.mention} foi adicionado a {cargo.mention}\n'
-                                 f'{participar.mention} será removido em {timer}s\n\n')
+                                 f'{participar.mention} será removido em <t:{int(f"{time():.0f}") + timer}:R>\n\n')
+
         recrutar.set_thumbnail(url=interaction.guild.icon)
-        recrutar.set_footer(
-            text=f'Recrutado por {interaction.user}', icon_url=f'{interaction.user.avatar}')
+        recrutar.set_footer(text=f'Recrutado por {interaction.user}', icon_url=f'{interaction.user.avatar}')
         recrutar.timestamp = datetime.datetime.now(tz=tz_brazil)
 
         await member.add_roles(membro)

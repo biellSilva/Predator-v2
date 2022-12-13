@@ -2,39 +2,33 @@ import discord
 import discord.utils
 import datetime
 import pytz
+import config
 
 from discord.ext import commands
 from discord import app_commands, Interaction
 
 tz_brazil = pytz.timezone('America/Sao_Paulo')
 
-roxo = 0x690FC3
-vermelho = 0xff0000
-
-staff = 1000948452496244736
-
 
 class Denuncia(discord.ui.Modal, title='Registro de Denúncia'):
-    warframe = discord.ui.TextInput(label='Warframe', required=False)
-    discord_name = discord.ui.TextInput(label='Discord', required=False)
-    razao = discord.ui.TextInput(
-        label='Nos conte o motivo da denúncia', style=discord.TextStyle.paragraph, required=True)
+    warframe = discord.ui.TextInput(label='Warframe', required=False, placeholder='Nome#000')
+    discord_name = discord.ui.TextInput(label='Discord', required=False, placeholder='Nome#000')
+    razao = discord.ui.TextInput(label='Motivo da denúncia', style=discord.TextStyle.paragraph, required=True, placeholder='Xingamentos')
 
     async def on_submit(self, interaction: Interaction):
         guild = interaction.guild
         author = interaction.user
-        formChannel = guild.get_channel(1021369373782454292)
+        formChannel = guild.get_channel(config.formularios)
 
         em = discord.Embed(title='Registro de Denúncia',
-                           color=roxo,
+                           color=config.roxo,
                            description=f'**Warframe:** {self.warframe}\n'
                            f'**Discord:** {self.discord_name}\n'
                            f'**Razão:** {self.razao}\n\n'
                            f'{author.mention} - {author.id}')
 
         em.set_thumbnail(url=guild.icon)
-        em.set_footer(
-            text=f'Registrado por {author}', icon_url=author.avatar)
+        em.set_footer(text=f'Registrado por {author}', icon_url=author.avatar)
         em.timestamp = datetime.datetime.now(tz=tz_brazil)
         await formChannel.send(embed=em)
         await interaction.response.send_message(f'Registro enviado para a moderação', embed=em, ephemeral=True)
@@ -44,19 +38,18 @@ class Denuncia(discord.ui.Modal, title='Registro de Denúncia'):
 
 
 class Criador(discord.ui.Modal, title='Criador de Conteúdo'):
-    warframe = discord.ui.TextInput(label='Warframe', required=True)
-    youtube = discord.ui.TextInput(label='Youtube', required=False)
-    twitch = discord.ui.TextInput(label='Twitch', required=False)
-    razao = discord.ui.TextInput(
-        label='Deseja nos contar algo mais?', style=discord.TextStyle.paragraph, required=False)
+    warframe = discord.ui.TextInput(label='Warframe', required=True, placeholder='Nome#000')
+    youtube = discord.ui.TextInput(label='Youtube', required=False, placeholder='https://youtube.com/user')
+    twitch = discord.ui.TextInput(label='Twitch', required=False, placeholder='https://twitch.tv/user')
+    razao = discord.ui.TextInput(label='Informações Extras', style=discord.TextStyle.paragraph, required=False, placeholder='Stream de Warframe 10 horas por dia')
 
     async def on_submit(self, interaction: Interaction):
         guild = interaction.guild
         author = interaction.user
-        formChannel = guild.get_channel(1021369373782454292)
+        formChannel = guild.get_channel(config.formularios)
 
         em = discord.Embed(title='Criador de Conteúdo',
-                           color=roxo,
+                           color=config.roxo,
                            description=f'**Warframe:** {self.warframe}\n'
                            f'**Twitch:** {self.twitch}\n'
                            f'**Youtube:** {self.youtube}'
