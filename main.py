@@ -16,9 +16,9 @@ class Predator(commands.Bot):
     async def setup_hook(self):
         self.task = self.loop.create_task(self.ch_pr())
 
-        for filename in os.listdir('./Extensions2'):
+        for filename in os.listdir('./Extensions'):
             if filename.endswith('.py'):
-                await self.load_extension('Extensions2.' + filename[:-3])
+                await self.load_extension('Extensions.' + filename[:-3])
                 self.initial_extensions.append(filename[:-3])
 
         print(self.initial_extensions)
@@ -80,5 +80,5 @@ async def synnc(ctx: Context, spec = None):
 
 
 dotenv.load_dotenv(dotenv.find_dotenv())
-token = os.getenv('token1')
+token = os.getenv('token')
 bot.run(token=token)
