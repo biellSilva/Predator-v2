@@ -1,0 +1,17 @@
+
+# MONGODB 
+
+
+# COLORS
+
+
+# TIMEZONE
+
+
+# GUILD ID
+
+
+# ROLES ID'S
+
+
+# CHANNEL ID'S
