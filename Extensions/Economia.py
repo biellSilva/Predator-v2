@@ -2,10 +2,11 @@ import asyncio
 import discord
 import datetime
 import random
-import json
 import os
 import pytz
 import config
+import pymongo
+
 
 from time import time
 from discord.ext import commands
@@ -13,6 +14,7 @@ from discord import app_commands
 from typing import Optional
 from discord.app_commands import Choice
 from operator import getitem
+
 
 os.path.join(os.getcwd(), './json')
 
@@ -23,18 +25,24 @@ tz_brazil = pytz.timezone('America/Sao_Paulo')
 cd_mapping = commands.CooldownMapping.from_cooldown(
     1, 86400, commands.BucketType.user)
 
+client = pymongo.MongoClient(config.mongo)
+db = client.predator
+data = db.Uniao_User
+
 
 class Personalizado(discord.ui.Modal, title='Compra de Cargo Personalizado'):
     nome = discord.ui.TextInput(label='Nome', placeholder='Dumb Dev')
     cor = discord.ui.TextInput(label='Cor', placeholder='hex: #121212')
-    mencionavel = discord.ui.TextInput(label='Mencionavel', required=False, placeholder='Sim/Não', default='Sim')
-    icone = discord.ui.TextInput(label='Icone', required=False, placeholder='https://')
+    mencionavel = discord.ui.TextInput(
+        label='Mencionável', required=False, placeholder='Sim/Não', default='Não')
+    icone = discord.ui.TextInput(
+        label='Icone', required=False, placeholder='https://')
 
     async def on_submit(self, interaction: discord.Interaction):
         guild = interaction.guild
         user = interaction.user
 
-        form = guild.get_channel(1021369373782454292)
+        form = guild.get_channel(config.formularios)
 
         em = discord.Embed(title='Compra de Cargo Personalizado',
                            color=config.roxo,
@@ -43,14 +51,12 @@ class Personalizado(discord.ui.Modal, title='Compra de Cargo Personalizado'):
                            f'**Mencionavel:** {self.mencionavel}\n'
                            f'**Icone:** {self.icone}\n')
 
-        em.set_thumbnail(url='https://cdn.discordapp.com/emojis/629264485273698325.webp')
+        em.set_thumbnail(
+            url='https://cdn.discordapp.com/emojis/629264485273698325.webp')
         em.set_footer(text=f'Registrado por {user}', icon_url=user.avatar)
         em.timestamp = datetime.datetime.now(tz=tz_brazil)
 
-        users = await get_bank_data()
-        users[str(user.id)]['banco'] -= 5000000
-        with open('./json/bank.json', 'w') as f:
-            json.dump(users, f, indent=4)
+        await remove_banco(user, 5000000)
 
         await form.send(embed=em)
         await interaction.response.send_message(f'Pedido enviado para {form.mention}', embed=em, ephemeral=True)
@@ -66,69 +72,41 @@ class Economia(commands.Cog):
     banco = app_commands.Group(name='banco', description='Comandos do Banco Cósmico', guild_only=True)
     loja = app_commands.Group(name='loja', description='Comandos da Loja Cósmica', guild_only=True)
 
-    @commands.guild_only()
-    @commands.is_owner()
-    @commands.command()
-    async def clearbank(self, ctx):
-
-        if ctx.author.id != 420634633793699851:
-            ctx.reply('Você não tem permissão para isso')
-            return
-
-        data = json.load(open("./json/bank.json", "r"))
-        del (data)
-
-        with open('./json/bank.json', 'w') as f:
-            json.dump({}, f, indent=4)
-
-        await ctx.reply('json limpo')
-
-    @clearbank.error
-    async def clear_error(self, ctx, err):
-        await ctx.reply('de alguma forma você conseguiu chegar aqui, mas ainda não é o dono')
-        return
-
-    @commands.guild_only()
-    @commands.command()
-    @commands.has_permissions(administrator=True)
-    async def json(self, ctx):
-        await ctx.reply(file=discord.File('./json/bank.json'))
 
     @commands.Cog.listener()
-    async def on_message(self, message):
+    async def on_message(self, message: discord.Message):
 
-        msg_base = str(message.content)
-
-        if message.author.bot:
-            return
-
-        if msg_base.startswith('p!') or msg_base.startswith('m!') or msg_base.startswith('!'):
-            return
-
-        user = message.author
-        await open_account(user)
-        users = await get_bank_data()
-
-        msg = int(len(str(message.content)))+5
-        if msg > 50: msg = 50
-        valor = random.randrange(1, msg)
-
-        users[str(user.id)]['banco'] += valor
-        with open('./json/bank.json', 'w') as f:
-            json.dump(users, f, indent=4)
+        ''' Adiciona valor com base na mensagem '''
 
         guild = self.bot.get_guild(config.uniao)
         log = guild.get_channel(config.loja_log)
 
+        if message.author.bot:
+            return
+
+        if message.content.startswith('p!') or message.content.startswith('m!') or message.content.startswith('!'):
+            return
+
+        user = message.author
+        await open_account(user)
+
+        msg = len(message.content)+5
+        if msg > 50: msg = 50
+
+        valor = random.randrange(1, msg)
+        await add_banco(user, valor)
+
         em = discord.Embed(title='Log',
                            color=config.roxo,
-                           description=f'Mensagem: {user.mention} recebeu `{valor}`')
-        em.timestamp = datetime.datetime.now(tz=tz_brazil)
-        if user.avatar != None:
-            em.set_footer(text=f'{user}', icon_url=f'{user.avatar.url}')
-        else:
-            em.set_footer(text=f'{user}')
+                           description=f'Mensagem: {user.mention} recebeu `{valor}`',
+                           timestamp=datetime.datetime.now(tz=tz_brazil))
+
+        if user.avatar != None: em.set_footer(text=f'{user}', icon_url=f'{user.avatar.url}')
+
+        else: em.set_footer(text=f'{user}')
+
         await log.send(embed=em)
+        return
 
     @commands.Cog.listener()
     async def on_voice_state_update(self, member, before, after):
@@ -139,34 +117,34 @@ class Economia(commands.Cog):
         if member.bot:
             return
 
+        await open_account(member)
+
         if after.channel == None:
             return
 
         if after.afk:
             return
 
+
         while after.channel is not None and (after.self_mute == False or after.self_deaf == False or after.mute == False or after.deaf == False):
-            if before is not None or (after.self_stream == True or after.self_video == True) or after.afk:
+            if before.channel is not None:
                 break
 
-            user = member
-            await open_account(user)
-            users = await get_bank_data()
-
-            valor1 = random.randrange(1, 100)
-
-            users[str(user.id)]['banco'] += valor1
-            with open('./json/bank.json', 'w') as f:
-                json.dump(users, f, indent=4)
+            valor = random.randrange(1, 100)
+            await add_banco(member, valor)
 
             em = discord.Embed(title=f'Log',
                                color=config.roxo,
-                               description=f'Voice Stream: {member.mention} recebeu `{valor1}`')
-            em.timestamp = datetime.datetime.now(tz=tz_brazil)
-            em.set_footer(text=f'{member}', icon_url=f'{member.avatar.url}')
-            await log.send(embed=em)
+                               description=f'Voice: {member.mention} recebeu `{valor}`',
+                               timestamp = datetime.datetime.now(tz=tz_brazil))
+            if member.avatar.url != None:
+                em.set_footer(text=f'{member}', icon_url=f'{member.avatar.url}')
+            else:
+                em.set_footer(text=f'{member}')
 
+            await log.send(embed=em)
             await asyncio.sleep(600)
+
 
     @banco.command(name='conta')
     @app_commands.describe(membro='Selecione um membro')
@@ -180,39 +158,43 @@ class Economia(commands.Cog):
         if membro != None:
 
             await open_account(membro)
-            users = await get_bank_data()
 
-            bal = await update_bank(membro)
-            cafe = users[str(membro.id)]['cafe']
+            banco = await get_banco_data(membro)
+            cafe = banco['cafe']
+            bal = banco['banco']
 
             em = discord.Embed(title=f'Banco da {guild}',
                                color=config.roxo,
-                               description=f'Olá {user.display_name}!\nEstas são as informações de {membro.display_name}:\n')
+                               description=f'Olá {user.display_name}!\nEstas são as informações de {membro.display_name}:\n',
+                               timestamp=datetime.datetime.now(tz=tz_brazil))
+
             em.add_field(name='Saldo de UCredits', value=f'{bal}')
             em.set_thumbnail(url='https://cdn.discordapp.com/emojis/629264485273698325.webp')
             em.set_footer(text=f'Registrado em {guild}', icon_url=f'{guild.icon}')
             em.timestamp = datetime.datetime.now(tz=tz_brazil)
 
-            if cafe > 0: em.add_field(name='Cafézinhos', value=f'{cafe}')
+            if cafe > 0:
+                em.add_field(name='Cafézinhos', value=f'{cafe}')
 
             await interaction.response.send_message(embed=em, ephemeral=True)
             return
 
         await open_account(user)
-        users = await get_bank_data()
-
-        bal = await update_bank(user)
-        cafe = users[str(user.id)]['cafe']
+        banco = await get_banco_data(user)
+        cafe = banco['cafe']
+        bal = banco['banco']
 
         em = discord.Embed(title=f'Banco da {guild}',
                            color=config.roxo,
-                           description=f'Olá {user.display_name}! Estas são suas informações:\n')
+                           description=f'Olá {user.display_name}! Estas são suas informações:\n',
+                           timestamp=datetime.datetime.now(tz=tz_brazil))
+
         em.add_field(name='Saldo de UCredits', value=f'{bal}')
         em.set_thumbnail(url='https://cdn.discordapp.com/emojis/629264485273698325.webp')
         em.set_footer(text=f'Registrado em {guild}', icon_url=f'{guild.icon}')
-        em.timestamp = datetime.datetime.now(tz=tz_brazil)
 
-        if cafe > 0: em.add_field(name='Cafézinhos', value=f'{cafe}')
+        if cafe > 0:
+            em.add_field(name='Cafézinhos', value=f'{cafe}')
 
         await interaction.response.send_message(embed=em, ephemeral=True)
 
@@ -231,27 +213,26 @@ class Economia(commands.Cog):
         log = guild.get_channel(config.loja_log)
 
         await open_account(user)
-        users = await get_bank_data()
 
         diario = random.randrange(100, 500)
-
-        users[str(user.id)]['banco'] += diario
-        with open('./json/bank.json', 'w') as f:
-            json.dump(users, f, indent=4)
+        await add_banco(user, diario)
 
         em = discord.Embed(title=f'Login Diário',
                            color=config.roxo,
-                           description=f'{user.display_name}, recebeu `{diario} UCredits` pelo login diário')
+                           description=f'{user.display_name}, recebeu `{diario} UCredits` pelo login diário',
+                           timestamp = datetime.datetime.now(tz=tz_brazil))
+
         em.set_thumbnail(url='https://cdn.discordapp.com/emojis/629264485273698325.webp')
         em.set_footer(text=f'Registrado em {guild}', icon_url=f'{guild.icon}')
         em.timestamp = datetime.datetime.now(tz=tz_brazil)
-        await interaction.response.send_message(embed=em)
 
-        em = discord.Embed(title=f'Login diário',
+        em1 = discord.Embed(title=f'Login diário',
                            color=config.roxo,
                            description=f'{user.mention} recebeu {diario}')
-        em.timestamp = datetime.datetime.now(tz=tz_brazil)
-        await log.send(embed=em)
+        em1.timestamp = datetime.datetime.now(tz=tz_brazil)
+
+        await interaction.response.send_message(embed=em)
+        await log.send(embed=em1)
 
     @login.error
     async def login_error(self, interaction: discord.Interaction, err):
@@ -273,10 +254,10 @@ class Economia(commands.Cog):
         if (interaction.channel.id != config.loja_comandos) and (interaction.channel.id != config.comandos_staff) and (interaction.channel.id != config.teste_dev):
             await interaction.response.send_message(f'apenas em <#{config.loja_comandos}>', ephemeral=True)
             return
-        
+
         await open_account(membro)
-        users = await get_bank_data()
-        bal = await update_bank(user)
+        banco = await get_banco_data(user)
+        bal = banco['banco']
 
         if membro == user:
             await interaction.response.send_message('<:pepehmm:759975150367014952>?', ephemeral=True)
@@ -289,28 +270,28 @@ class Economia(commands.Cog):
         if valor > bal:
             em = discord.Embed(title=f'Sem Saldo',
                                color=config.roxo,
-                               description=f'{user.display_name}, você não possui {valor} em UCredits')
+                               description=f'{user.display_name}, você não possui {valor} em UCredits',
+                               timestamp=datetime.datetime.now(tz=tz_brazil))
             em.set_thumbnail(url='https://cdn.discordapp.com/emojis/629264485273698325.webp')
             em.set_footer(text=f'Registrado em {guild}', icon_url=f'{guild.icon}')
             em.add_field(name='Saldo de UCredits', value=f'{bal}')
-            em.timestamp = datetime.datetime.now(tz=tz_brazil)
+
             await interaction.response.send_message(embed=em, ephemeral=True)
             return
 
         em = discord.Embed(title=f'Doação de UCredits',
                            color=config.roxo,
-                           description=f'{user.display_name} enviou {valor} UCredits para {membro.mention}')
+                           description=f'{user.display_name} enviou {valor} UCredits para {membro.mention}',
+                           timestamp=datetime.datetime.now(tz=tz_brazil))
         em.set_thumbnail(url='https://cdn.discordapp.com/emojis/629264485273698325.webp')
         em.set_footer(text=f'Registrado em {guild}', icon_url=f'{guild.icon}')
-        em.timestamp = datetime.datetime.now(tz=tz_brazil)
+
+        await add_banco(membro, valor)
+        await remove_banco(user, valor)
+
         await interaction.response.send_message(embed=em)
 
-
-        users[str(user.id)]['banco'] -= valor
-        users[str(membro.id)]['banco'] += valor
-        with open('./json/bank.json', 'w') as f:
-            json.dump(users, f, indent=4)
-
+        
     @loja.command(name='ajuda')
     async def loja_cosmica(self, interaction: discord.Interaction):
 
@@ -364,25 +345,26 @@ class Economia(commands.Cog):
                            f'\n{cargo27.mention}'
 
                            '\n\nPara comprar um dos cargos ou criar seu cargo personalizado `/loja compra`'
-                           '\nPara criar novos cargos personalizados preencha o formulario informando tudo que deseja nele, nome, cor, etc\nCor deve ser passada em HEX (#ffffff por exemplo)')
-        em.set_thumbnail(url='https://cdn.discordapp.com/emojis/629264485273698325.webp')
+                           '\nPara criar novos cargos personalizados preencha o formulario')
+        em.set_thumbnail(
+            url='https://cdn.discordapp.com/emojis/629264485273698325.webp')
         em.set_footer(text=f'{guild}', icon_url=f'{guild.icon}')
         em.timestamp = datetime.datetime.now(tz=tz_brazil)
 
         await interaction.response.send_message(embed=em, ephemeral=True)
-           
+
     @loja.command(name='compra')
     @app_commands.describe(tipo='Cargo padrão ou personalizado?', cargo='Selecione o cargo padrão que deseja comprar')
     @app_commands.choices(tipo=[
         Choice(name='Padrão', value='pad'),
         Choice(name='Personalizado', value='per')
     ],
-        cargo = [
+        cargo=[
             Choice(name='Traficante de Rivens', value='tra'),
             Choice(name='Tenno Master', value='ten'),
             Choice(name='Viciado em Café', value='vic'),
             Choice(name='Tony Hawk do K-Drive', value='ton'),
-        ])
+    ])
     async def custom(self, interaction: discord.Interaction, tipo: str, cargo: Optional[str]):
 
         '''Compra cargo padrão ou personalizado'''
@@ -390,8 +372,8 @@ class Economia(commands.Cog):
         user = interaction.user
         guild = interaction.guild
 
-        users = await get_bank_data()
-        bal = await update_bank(user)
+        banco = await get_banco_data(user)
+        bal = banco['banco']
 
         if (interaction.channel.id != config.loja_comandos) and (interaction.channel.id != config.comandos_staff) and (interaction.channel.id != config.teste_dev):
             await interaction.response.send_message(f'Apenas no <#{config.loja_comandos}>', ephemeral=True)
@@ -406,10 +388,11 @@ class Economia(commands.Cog):
             valor = 2000000
             if bal < valor:
                 em = discord.Embed(title=f'Sem Saldo',
-                                color=config.roxo,
-                                description=f'{user.display_avatar}, você não possui UCredits suficientes')
+                                   color=config.roxo,
+                                   description=f'{user.display_avatar}, você não possui UCredits suficientes')
                 em.add_field(name='Balanço atual', value=f'{bal}')
-                em.set_thumbnail(url='https://cdn.discordapp.com/emojis/629264485273698325.webp')
+                em.set_thumbnail(
+                    url='https://cdn.discordapp.com/emojis/629264485273698325.webp')
                 em.set_footer(text=f'{guild}', icon_url=f'{guild.icon}')
                 em.timestamp = datetime.datetime.now(tz=tz_brazil)
                 await interaction.response.send_message(embed=em, ephemeral=True)
@@ -428,16 +411,15 @@ class Economia(commands.Cog):
                     cargo_add = guild.get_role(1000948506279825418)
 
             await user.add_roles(cargo_add)
-            
+
             em = discord.Embed(title='Loja Cósmica', color=config.roxo,
                                description=f'{user.display_name}, o cargo {cargo_add.mention} foi entregue conforme sua compra')
-            em.set_thumbnail(url='https://cdn.discordapp.com/emojis/629264485273698325.webp')
+            em.set_thumbnail(
+                url='https://cdn.discordapp.com/emojis/629264485273698325.webp')
             em.set_footer(text=f'{guild}', icon_url=f'{guild.icon}')
             em.timestamp = datetime.datetime.now(tz=tz_brazil)
 
-            users[str(user.id)]['banco'] -= valor
-            with open('./json/bank.json', 'w') as f:
-                json.dump(users, f, indent=4)
+            await remove_banco(user, valor)
 
             await interaction.response.send_message(embed=em)
 
@@ -448,7 +430,8 @@ class Economia(commands.Cog):
                                    color=config.roxo,
                                    description=f'{user.display_avatar}, você não possui UCredits suficientes')
                 em.add_field(name='Balanço atual', value=f'{bal}')
-                em.set_thumbnail(url='https://cdn.discordapp.com/emojis/629264485273698325.webp')
+                em.set_thumbnail(
+                    url='https://cdn.discordapp.com/emojis/629264485273698325.webp')
                 em.set_footer(text=f'{guild}', icon_url=f'{guild.icon}')
                 em.timestamp = datetime.datetime.now(tz=tz_brazil)
                 await interaction.response.send_message(embed=em)
@@ -473,15 +456,16 @@ class Economia(commands.Cog):
         sala = guild.get_channel(sala)
 
         await interaction.response.send_message('```\n'
-                                                        'Boa tarde senhor(a), gostaria de um café?\n'
-                                                        'Temos os seguintes grãos:\n'
-                                                        '1: Especial, Jacu Bird - 800 créditos\n'
-                                                        '2: Especial, Bravo Tenor - 500 créditos\n'
-                                                        '3: Gourmet, Orfeu Clássico - 100 créditos\n'
-                                                        '4: Superior, Café Brasileiro - 50 créditos\n'
-                                                        '5: Extraforte, Pilão - 10 créditos e sua dignidade\n'
-                                                        'Me informe o número de qual deseja'
-                                                        '```', file=discord.File('./imagens/cafe/tipos.jpg'))
+                                                'Boa tarde senhor(a), gostaria de um café?\n'
+                                                'Temos os seguintes grãos:\n'
+                                                '1: Especial, Jacu Bird - 800 créditos\n'
+                                                '2: Especial, Bravo Tenor - 500 créditos\n'
+                                                '3: Gourmet, Orfeu Clássico - 100 créditos\n'
+                                                '4: Superior, Café Brasileiro - 50 créditos\n'
+                                                '5: Extraforte, Pilão - 10 créditos e sua dignidade\n'
+                                                'Me informe o número de qual deseja'
+                                                '```', file=discord.File('./imagens/cafe/tipos.jpg'))
+
         def check(message):
             return message.author == user
 
@@ -497,8 +481,8 @@ class Economia(commands.Cog):
             await sala.send('Lamento mas não servimos este café aqui...')
             return
 
-        users = await get_bank_data()
-        bal = await update_bank(user)
+        banco = await get_banco_data(user)
+        bal = banco['banco']
 
         if tipo == '1':
             custo = 800
@@ -506,15 +490,15 @@ class Economia(commands.Cog):
                 await sala.send('Cartão recusado!')
                 return
             async with sala.typing():
-                await asyncio.sleep(3)
+                await asyncio.sleep(1)
                 await sala.send('hmm, aprecio sua preferência pelo belíssimo Jacu Bird, irei prepará-lo imediatamente começando por moer os grãos', file=discord.File('./imagens/cafe/moendo.gif'))
-                await asyncio.sleep(3)
+                await asyncio.sleep(1)
                 await sala.send('Agora é só esperar a água ferver...', file=discord.File('./imagens/cafe/agua.gif'))
-                await asyncio.sleep(3)
+                await asyncio.sleep(1)
                 await sala.send('Dê uns segundinhos para florecer seu café.', file=discord.File('./imagens/cafe/florecendo.gif'))
-                await asyncio.sleep(3)
+                await asyncio.sleep(1)
                 await sala.send('Certo, agora só alguns minutos e estará pronto.', file=discord.File('./imagens/cafe/coando.gif'))
-                await asyncio.sleep(3)
+                await asyncio.sleep(1)
             await sala.send('Pronto! Aproveite seu belíssimo café feito com grãos de Jacu Bird', file=discord.File('./imagens/cafe/pronto.gif'))
 
         if tipo == '2':
@@ -523,15 +507,15 @@ class Economia(commands.Cog):
                 await sala.send('Cartão negado!')
                 return
             async with sala.typing():
-                await asyncio.sleep(3)
+                await asyncio.sleep(1)
                 await sala.send('hmm, aprecio sua preferência por um delicioso Bravo Tenor, irei prepará-lo imediatamente começando por moer os grãos', file=discord.File('./imagens/cafe/moendo.gif'))
-                await asyncio.sleep(3)
+                await asyncio.sleep(1)
                 await sala.send('Agora é só esperar a água ferver...', file=discord.File('./imagens/cafe/agua.gif'))
-                await asyncio.sleep(3)
+                await asyncio.sleep(1)
                 await sala.send('Dê uns segundinhos para florecer seu café.', file=discord.File('./imagens/cafe/florecendo.gif'))
-                await asyncio.sleep(3)
+                await asyncio.sleep(1)
                 await sala.send('Certo, agora só alguns minutos e estará pronto.', file=discord.File('./imagens/cafe/coando.gif'))
-                await asyncio.sleep(3)
+                await asyncio.sleep(1)
             await sala.send('Pronto! Aproveite seu café feito com grãos de Bravo Tenor', file=discord.File('./imagens/cafe/pronto.gif'))
 
         if tipo == '3':
@@ -540,13 +524,13 @@ class Economia(commands.Cog):
                 await sala.send('Este cartão está bloqueado!')
                 return
             async with sala.typing():
-                await asyncio.sleep(3)
+                await asyncio.sleep(1)
                 await sala.send('hmm, então você é daqueles que preferem Orfeu Clássico, I see\nMe dê um minuto já irei prepará-lo, enquanto deixarei a máquina moendo os grãos', file=discord.File('./imagens/cafe/moendo.gif'))
-                await asyncio.sleep(3)
+                await asyncio.sleep(1)
                 await sala.send('Enquanto a água ganha temperatura, o que você faz aqui?', file=discord.File('./imagens/cafe/agua.gif'))
-                await asyncio.sleep(3)
+                await asyncio.sleep(1)
                 await sala.send('Opa, só mais um tempinho e estará pronto.', file=discord.File('./imagens/cafe/coando.gif'))
-                await asyncio.sleep(3)
+                await asyncio.sleep(1)
             await sala.send('Pronto! Aproveite seu Orfeu Clássico', file=discord.File('./imagens/cafe/pronto.gif'))
 
         if tipo == '4':
@@ -555,11 +539,11 @@ class Economia(commands.Cog):
                 await sala.send('Você não tem nem mesmo uma notinha de 50 UCredits??')
                 return
             async with sala.typing():
-                await asyncio.sleep(3)
+                await asyncio.sleep(1)
                 await sala.send('hmm, eu vejo que você ainda não conheceu algo melhor que Café Brasileiro, um minuto já irei prepará-lo', file=discord.File('./imagens/cafe/agua.gif'))
-                await asyncio.sleep(3)
+                await asyncio.sleep(1)
                 await sala.send('Certo, so mais uma pequena espera.', file=discord.File('./imagens/cafe/coando.gif'))
-                await asyncio.sleep(3)
+                await asyncio.sleep(1)
             await sala.send('Pronto! Aproveite seu Café Brasileiro', file=discord.File('./imagens/cafe/pronto.gif'))
 
         if tipo == '5':
@@ -568,86 +552,105 @@ class Economia(commands.Cog):
                 await sala.send('Como conseguiu ficar pobre ao ponto de não ter 10 UCredits????')
                 return
             async with sala.typing():
-                await asyncio.sleep(3)
+                await asyncio.sleep(1)
                 await sala.send('hm, acabou o dinheiro não foi?\nCafé Pilão, um minuto e você terá o que pediu', file=discord.File('./imagens/cafe/agua.gif'))
-                await asyncio.sleep(3)
+                await asyncio.sleep(1)
                 await sala.send('Sem pressa.', file=discord.File('./imagens/cafe/coando.gif'))
-                await asyncio.sleep(3)
+                await asyncio.sleep(1)
             await sala.send('Pronto! Aproveite seu Café Pilão\nAgora VAZA!!', file=discord.File('./imagens/cafe/pronto.gif'))
 
-        users[str(user.id)]['banco'] -= custo
-        users[str(user.id)]['cafe'] += 1
-        with open('./json/bank.json', 'w') as f:
-            json.dump(users, f, indent=4)
+        await remove_banco(user, custo)
+        await add_cafe(user)
+
 
     @banco.command(name='rank')
     async def ranking(self, interaction: discord.Interaction):
 
         '''Ranking dos 10 maiores acumuladores do Banco Cósmico'''
 
-        with open('./json/bank.json', 'r', encoding="utf_8") as f:
-            data = json.load(f)
-        lines = sorted(data.items(), key=lambda k:getitem(k[1], 'banco'), reverse=True)
-
         guild = interaction.guild
         em = discord.Embed(title='Banco Cósmico', color=config.roxo,
-                           description='Ranking dos 10 maiores acumuladores de UCredits')
+                           description='*Ranking dos 10 maiores acumuladores de UCredits*\n\n',
+                           timestamp=datetime.datetime.now(tz=tz_brazil))
         em.set_thumbnail(url='https://cdn.discordapp.com/emojis/629264485273698325.webp')
         em.set_footer(text=f'{guild}', icon_url=f'{guild.icon}')
-        em.timestamp = datetime.datetime.now(tz=tz_brazil)
 
-        index = 1
-        for i, v in lines:
-            while index <= 10:
-                x = int(str(i))
-                nome = guild.get_member(x)
-                banco = str(v['banco'])
-                em.add_field(name=nome.display_name, value=banco)
-                index += 1
-                break
+        users = data.find().sort([('banco', -1), ('_id', 1)]).limit(10)
+        for user in users:
+            user_id = user['user_id']
+            banco = user['banco']
+            em.description += f'> <@{user_id}> - {banco}\n'
 
         await interaction.response.send_message(embed=em, ephemeral=True)
 
 
-async def open_account(user):
+async def open_account(user: discord.Member):
 
     '''Cria a conta caso membro não possua'''
 
-    users = await get_bank_data()
+    key = {"user_id": str(user.id)}
 
-    if str(user.id) in users:
-        return False
-
-    else:
-        users[str(user.id)] = {}
-        users[str(user.id)]['nome'] = str(user.name)
-        users[str(user.id)]['banco'] = 75000
-        users[str(user.id)]['cafe'] = 0
-
-    with open('./json/bank.json', 'w') as f:
-        json.dump(users, f, indent=4)
+    if data.find_one(key) == None:
+        data.insert_one(
+            {
+                "user_id": str(user.id),
+                "user_name": f'{user} - {user.display_name}',
+                "banco": 100000,
+                "cafe": 0,
+                "voice_id": 0,
+                "voice_priv": False
+            }
+        )
         return True
 
-
-async def get_bank_data():
-
-    '''Lê todo o arquivo json, em busca do membro'''
-
-    with open('./json/bank.json', 'r') as f:
-        users = json.load(f)
-    return(users)
+    else:
+        return False
 
 
-async def update_bank(user, change=0, mode='banco'):
-    users = await get_bank_data()
+async def get_banco_data(user: discord.Member):
 
-    users[str(user.id)][mode] += change
+    '''Lê o banco de dados em busca do membro'''
 
-    with open('./json/bank.json', 'w') as f:
-        json.dump(users, f, indent=4)
+    key = {"user_id": str(user.id)}
+    banco = data.find_one(key)
 
-    bal = users[str(user.id)][mode]
-    return bal
+    return banco
+
+
+async def add_banco(user: discord.Member, add_valor: int):
+
+    ''' Adiciona valor ao saldo do membro'''
+
+    banco = await get_banco_data(user)
+    valor = int(banco['banco']) + add_valor
+
+    new_banco = {'$set': {'banco': valor}}
+    data.update_one(banco, new_banco)
+    return
+
+
+async def remove_banco(user: discord.Member, remove_valor: int):
+
+    ''' Remove valor do saldo do membro'''
+
+    banco = await get_banco_data(user)
+    valor = int(banco['banco']) - remove_valor
+
+    new_banco = {'$set': {'banco': valor}}
+    data.update_one(banco, new_banco)
+    return
+
+
+async def add_cafe(user: discord.Member):
+
+    ''' Adiciona 1 café ao membro'''
+
+    banco = await get_banco_data(user)
+    valor = int(banco['cafe']) + 1
+
+    new_banco = {'$set': {'cafe': valor}}
+    data.update_one(banco, new_banco)
+    return
 
 
 async def setup(bot):

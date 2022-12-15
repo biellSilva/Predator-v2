@@ -3,7 +3,6 @@ import datetime
 import asyncio
 import random
 import os
-import pytz
 import requests
 import config
 
@@ -12,8 +11,6 @@ from discord import app_commands
 from typing import Optional
 from bs4 import BeautifulSoup
 
-
-tz_brazil = pytz.timezone('America/Sao_Paulo')
 
 images = os.path.join(os.getcwd(), "./imagens/wiki")
 
@@ -42,7 +39,7 @@ class openCommands(commands.Cog):
                 title=f'Avatar de {user.display_name}', color=config.roxo)
             em.set_image(url=user.display_avatar)
             em.set_footer(text=f'Autor: {user}')
-            em.timestamp = datetime.datetime.now(tz=tz_brazil)
+            em.timestamp = datetime.datetime.now(tz=config.tz_brazil)
             await interaction.response.send_message(embed=em, ephemeral=True)
 
         else:
@@ -50,7 +47,7 @@ class openCommands(commands.Cog):
                 title=f'Avatar de {member.display_name}', color=config.roxo)
             em.set_image(url=member.display_avatar)
             em.set_footer(text=f'Autor: {user}')
-            em.timestamp = datetime.datetime.now(tz=tz_brazil)
+            em.timestamp = datetime.datetime.now(tz=config.tz_brazil)
             await interaction.response.send_message(embed=em, ephemeral=True)
 
     @app_commands.command(name='banir')
@@ -95,7 +92,7 @@ class openCommands(commands.Cog):
                 url='https://cdn.discordapp.com/emojis/716678272338886716.webp')
             em.set_footer(
                 text=f'Registrado por {guild}', icon_url=f'{guild.icon}')
-            em.timestamp = datetime.datetime.now(tz=tz_brazil)
+            em.timestamp = datetime.datetime.now(tz=config.tz_brazil)
 
             await interaction.response.send_message(embed=em)
 
@@ -109,7 +106,7 @@ class openCommands(commands.Cog):
                 url='https://cdn.discordapp.com/emojis/716678272338886716.webp')
             em.set_footer(
                 text=f'Registrado em {guild}', icon_url=f'{guild.icon}')
-            em.timestamp = datetime.datetime.now(tz=tz_brazil)
+            em.timestamp = datetime.datetime.now(tz=config.tz_brazil)
 
             await interaction.response.send_message(embed=em)
 
@@ -170,7 +167,7 @@ class openCommands(commands.Cog):
                            f'[{title_5}]({link_5})\n')
         em.set_thumbnail(url=photo)
         em.set_footer(text=guild.name, icon_url=guild.icon)
-        em.timestamp = datetime.datetime.now(tz=tz_brazil)
+        em.timestamp = datetime.datetime.now(tz=config.tz_brazil)
 
         await msg.edit(content='', embed=em)
         return

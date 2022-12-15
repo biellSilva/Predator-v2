@@ -94,7 +94,6 @@ class AlertaView(discord.ui.View):
         member = interaction.user
 
         await interaction.response.defer(ephemeral=True, thinking=True)
-        #print(member, select.labels)
 
         ajudante = guild.get_role(config.ajudante)
         reator = guild.get_role(config.reator)
@@ -119,6 +118,10 @@ class AlertaView(discord.ui.View):
                 add += f'\n*+ {ajudante.mention}*'
             else:
                 mantem += f'\n*~ {ajudante.mention}*'
+        else:
+            await member.remove_roles(ajudante)
+            removido += f'\n*- {ajudante.mention}*'
+
 
         if 'reator' in select.values:
             if reator not in member.roles:
@@ -126,6 +129,10 @@ class AlertaView(discord.ui.View):
                 add += f'\n*+ {reator.mention}*'
             else:
                 mantem += f'\n*~ {reator.mention}*'
+        else:
+            await member.remove_roles(reator)
+            removido += f'\n*- {reator.mention}*'
+
 
         if 'catalisador' in select.values:
             if catalisador not in member.roles:
@@ -133,6 +140,10 @@ class AlertaView(discord.ui.View):
                 add += f'\n*+ {catalisador.mention}*'
             else:
                 mantem += f'\n*~ {catalisador.mention}*'
+        else:
+            await member.remove_roles(catalisador)
+            removido += f'\n*- {catalisador.mention}*'
+
 
         if 'baro' in select.values:
             if baro not in member.roles:
@@ -140,6 +151,10 @@ class AlertaView(discord.ui.View):
                 add += f'\n*+ {baro.mention}*'
             else:
                 mantem += f'\n*~ {baro.mention}*'
+        else:
+            await member.remove_roles(baro)
+            removido += f'\n*- {baro.mention}*'
+
 
         if 'forma' in select.values:
             if forma not in member.roles:
@@ -147,13 +162,21 @@ class AlertaView(discord.ui.View):
                 add += f'\n*+ {forma.mention}*'
             else:
                 mantem += f'\n*~ {forma.mention}*'
+        else:
+            await member.remove_roles(forma)
+            removido += f'\n*- {forma.mention}*'
 
-        if 'forma_umbra' in select.values:
+
+        if 'umbra' in select.values:
             if forma_umbra not in member.roles:
                 await member.add_roles(forma_umbra)
                 add += f'\n*+ {forma_umbra.mention}*'
             else:
                 mantem += f'\n*~ {forma_umbra.mention}*'
+        else:
+            await member.remove_roles(forma_umbra)
+            removido += f'\n*- {forma_umbra.mention}*'
+
 
         if 'lotus' in select.values:
             if lotus not in member.roles:
@@ -161,6 +184,10 @@ class AlertaView(discord.ui.View):
                 add += f'\n*+ {lotus.mention}*'
             else:
                 mantem += f'\n*~ {lotus.mention}*'
+        else:
+            await member.remove_roles(lotus)
+            removido += f'\n*- {lotus.mention}*'
+
         
         if 'mestre' in select.values:
             if mestre not in member.roles:
@@ -168,6 +195,10 @@ class AlertaView(discord.ui.View):
                 add += f'\n*+ {mestre.mention}*'
             else:
                 mantem += f'\n*~ {mestre.mention}*'
+        else:
+            await member.remove_roles(mestre)
+            removido += f'\n*- {mestre.mention}*'
+
 
         if 'sorteio' in select.values:
             if sorteio not in member.roles:
@@ -175,6 +206,10 @@ class AlertaView(discord.ui.View):
                 add += f'\n*+ {sorteio.mention}*'
             else:
                 mantem += f'\n*~ {sorteio.mention}*'
+        else:
+            await member.remove_roles(sorteio)
+            removido += f'\n*- {sorteio.mention}*'
+
 
         if 'evento' in select.values:
             if evento not in member.roles:
@@ -182,8 +217,10 @@ class AlertaView(discord.ui.View):
                 add += f'\n*+ {evento.mention}*'
             else:
                 mantem += f'\n*~ {evento.mention}*'
+        else:
+            await member.remove_roles()
 
-        if 'drop' in select.values:
+        if 'drops' in select.values:
             if drop not in member.roles:
                 await member.add_roles(drop)
                 add += f'\n*+ {drop.mention}*'
@@ -198,70 +235,6 @@ class AlertaView(discord.ui.View):
                 mantem += f'\n*~ {update.mention}*'
 
 
-                #############################################################
-                #############################################################
-                #############################################################
-
-        if 'ajudante' not in select.values:
-            if ajudante in member.roles:
-                await member.remove_roles(ajudante)
-                removido += f'\n*- {ajudante.mention}*'
-
-        if 'reator' not in select.values:
-            if reator in member.roles:
-                await member.remove_roles(reator)
-                removido += f'\n*- {reator.mention}*'
-            
-        if 'catalisador' not in select.values:
-            if catalisador in member.roles:
-                await member.remove_roles(catalisador)
-                removido += f'\n*- {catalisador.mention}*'
-            
-        if 'baro' not in select.values:
-            if baro in member.roles:
-                await member.remove_roles(baro)
-                removido += f'\n*- {baro.mention}*'
-            
-        if 'forma' not in select.values:
-            if forma in member.roles:
-                await member.remove_roles(forma)
-                removido += f'\n*- {forma.mention}*'
-            
-        if 'forma_umbra' not in select.values:
-            if forma_umbra in member.roles:
-                await member.remove_roles(forma_umbra)
-                removido += f'\n*- {forma_umbra.mention}*'
-            
-        if 'lotus' not in select.values:
-            if lotus in member.roles:
-                await member.remove_roles(lotus)
-                removido += f'\n*- {lotus.mention}*'
-            
-        if 'mestre' not in select.values:
-            if mestre in member.roles:
-                await member.remove_roles(mestre)
-                removido += f'\n*- {mestre.mention}*'
-            
-        if 'sorteio' not in select.values:
-            if sorteio in member.roles:
-                await member.remove_roles(sorteio)
-                removido += f'\n*- {sorteio.mention}*'
-            
-        if 'evento' not in select.values:
-            if evento in member.roles:
-                await member.remove_roles(evento)
-                removido += f'\n*- {evento.mention}*'
-            
-        if 'drop' not in select.values:
-            if drop in member.roles:
-                await member.remove_roles(drop)
-                removido += f'\n*- {drop.mention}*'
-            
-        if 'update' not in select.values:
-            if update in member.roles:
-                await member.remove_roles(update)
-                removido += f'\n*- {update.mention}*'
-            
         await interaction.edit_original_response(content=f'{"" if len(mantem)<14 else mantem} {"" if len(add)<17 else add} {"" if len(removido)<17 else removido}')
         
 
