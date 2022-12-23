@@ -69,9 +69,10 @@ class Economia(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    banco = app_commands.Group(name='banco', description='Comandos do Banco Cósmico', guild_only=True)
-    loja = app_commands.Group(name='loja', description='Comandos da Loja Cósmica', guild_only=True)
-
+    banco = app_commands.Group(
+        name='banco', description='Comandos do Banco Cósmico', guild_only=True)
+    loja = app_commands.Group(
+        name='loja', description='Comandos da Loja Cósmica', guild_only=True)
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
@@ -91,7 +92,8 @@ class Economia(commands.Cog):
         await open_account(user)
 
         msg = len(message.content)+5
-        if msg > 50: msg = 50
+        if msg > 50:
+            msg = 50
 
         valor = random.randrange(1, msg)
         await add_banco(user, valor)
@@ -101,9 +103,11 @@ class Economia(commands.Cog):
                            description=f'Mensagem: {user.mention} recebeu `{valor}`',
                            timestamp=datetime.datetime.now(tz=tz_brazil))
 
-        if user.avatar != None: em.set_footer(text=f'{user}', icon_url=f'{user.avatar.url}')
+        if user.avatar != None:
+            em.set_footer(text=f'{user}', icon_url=f'{user.display_avatar.url}')
 
-        else: em.set_footer(text=f'{user}')
+        else:
+            em.set_footer(text=f'{user}')
 
         await log.send(embed=em)
         return
@@ -125,7 +129,6 @@ class Economia(commands.Cog):
         if after.afk:
             return
 
-
         while after.channel is not None and (after.self_mute == False or after.self_deaf == False or after.mute == False or after.deaf == False):
             if before.channel is not None:
                 break
@@ -136,15 +139,15 @@ class Economia(commands.Cog):
             em = discord.Embed(title=f'Log',
                                color=config.roxo,
                                description=f'Voice: {member.mention} recebeu `{valor}`',
-                               timestamp = datetime.datetime.now(tz=tz_brazil))
+                               timestamp=datetime.datetime.now(tz=tz_brazil))
             if member.avatar.url != None:
-                em.set_footer(text=f'{member}', icon_url=f'{member.avatar.url}')
+                em.set_footer(text=f'{member}',
+                              icon_url=f'{member.display_avatar.url}')
             else:
                 em.set_footer(text=f'{member}')
 
             await log.send(embed=em)
             await asyncio.sleep(600)
-
 
     @banco.command(name='conta')
     @app_commands.describe(membro='Selecione um membro')
@@ -169,8 +172,10 @@ class Economia(commands.Cog):
                                timestamp=datetime.datetime.now(tz=tz_brazil))
 
             em.add_field(name='Saldo de UCredits', value=f'{bal}')
-            em.set_thumbnail(url='https://cdn.discordapp.com/emojis/629264485273698325.webp')
-            em.set_footer(text=f'Registrado em {guild}', icon_url=f'{guild.icon}')
+            em.set_thumbnail(
+                url='https://cdn.discordapp.com/emojis/629264485273698325.webp')
+            em.set_footer(
+                text=f'Registrado em {guild}', icon_url=f'{guild.icon}')
             em.timestamp = datetime.datetime.now(tz=tz_brazil)
 
             if cafe > 0:
@@ -190,7 +195,8 @@ class Economia(commands.Cog):
                            timestamp=datetime.datetime.now(tz=tz_brazil))
 
         em.add_field(name='Saldo de UCredits', value=f'{bal}')
-        em.set_thumbnail(url='https://cdn.discordapp.com/emojis/629264485273698325.webp')
+        em.set_thumbnail(
+            url='https://cdn.discordapp.com/emojis/629264485273698325.webp')
         em.set_footer(text=f'Registrado em {guild}', icon_url=f'{guild.icon}')
 
         if cafe > 0:
@@ -220,15 +226,16 @@ class Economia(commands.Cog):
         em = discord.Embed(title=f'Login Diário',
                            color=config.roxo,
                            description=f'{user.display_name}, recebeu `{diario} UCredits` pelo login diário',
-                           timestamp = datetime.datetime.now(tz=tz_brazil))
+                           timestamp=datetime.datetime.now(tz=tz_brazil))
 
-        em.set_thumbnail(url='https://cdn.discordapp.com/emojis/629264485273698325.webp')
+        em.set_thumbnail(
+            url='https://cdn.discordapp.com/emojis/629264485273698325.webp')
         em.set_footer(text=f'Registrado em {guild}', icon_url=f'{guild.icon}')
         em.timestamp = datetime.datetime.now(tz=tz_brazil)
 
         em1 = discord.Embed(title=f'Login diário',
-                           color=config.roxo,
-                           description=f'{user.mention} recebeu {diario}')
+                            color=config.roxo,
+                            description=f'{user.mention} recebeu {diario}')
         em1.timestamp = datetime.datetime.now(tz=tz_brazil)
 
         await interaction.response.send_message(embed=em)
@@ -272,8 +279,10 @@ class Economia(commands.Cog):
                                color=config.roxo,
                                description=f'{user.display_name}, você não possui {valor} em UCredits',
                                timestamp=datetime.datetime.now(tz=tz_brazil))
-            em.set_thumbnail(url='https://cdn.discordapp.com/emojis/629264485273698325.webp')
-            em.set_footer(text=f'Registrado em {guild}', icon_url=f'{guild.icon}')
+            em.set_thumbnail(
+                url='https://cdn.discordapp.com/emojis/629264485273698325.webp')
+            em.set_footer(
+                text=f'Registrado em {guild}', icon_url=f'{guild.icon}')
             em.add_field(name='Saldo de UCredits', value=f'{bal}')
 
             await interaction.response.send_message(embed=em, ephemeral=True)
@@ -283,7 +292,8 @@ class Economia(commands.Cog):
                            color=config.roxo,
                            description=f'{user.display_name} enviou {valor} UCredits para {membro.mention}',
                            timestamp=datetime.datetime.now(tz=tz_brazil))
-        em.set_thumbnail(url='https://cdn.discordapp.com/emojis/629264485273698325.webp')
+        em.set_thumbnail(
+            url='https://cdn.discordapp.com/emojis/629264485273698325.webp')
         em.set_footer(text=f'Registrado em {guild}', icon_url=f'{guild.icon}')
 
         await add_banco(membro, valor)
@@ -291,7 +301,6 @@ class Economia(commands.Cog):
 
         await interaction.response.send_message(embed=em)
 
-        
     @loja.command(name='ajuda')
     async def loja_cosmica(self, interaction: discord.Interaction):
 
@@ -562,7 +571,6 @@ class Economia(commands.Cog):
         await remove_banco(user, custo)
         await add_cafe(user)
 
-
     @banco.command(name='rank')
     async def ranking(self, interaction: discord.Interaction):
 
@@ -572,7 +580,8 @@ class Economia(commands.Cog):
         em = discord.Embed(title='Banco Cósmico', color=config.roxo,
                            description='*Ranking dos 10 maiores acumuladores de UCredits*\n\n',
                            timestamp=datetime.datetime.now(tz=tz_brazil))
-        em.set_thumbnail(url='https://cdn.discordapp.com/emojis/629264485273698325.webp')
+        em.set_thumbnail(
+            url='https://cdn.discordapp.com/emojis/629264485273698325.webp')
         em.set_footer(text=f'{guild}', icon_url=f'{guild.icon}')
 
         users = data.find().sort([('banco', -1), ('_id', 1)]).limit(10)
@@ -595,7 +604,7 @@ async def open_account(user: discord.Member):
             {
                 "user_id": str(user.id),
                 "user_name": f'{user} - {user.display_name}',
-                "banco": 100000,
+                "banco": 0,
                 "cafe": 0,
                 "voice_id": 0,
                 "voice_priv": False

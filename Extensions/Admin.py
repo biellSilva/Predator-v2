@@ -26,7 +26,7 @@ class Registro(discord.ui.Modal, title='Registro de Punição'):
         guild = interaction.guild
         user = interaction.user
 
-        dev_embed = guild.get_channel(config.embed_test_dev)
+        dev_embed = guild.get_channel(config.test_dev_embed)
         reg = guild.get_channel(config.registro_de_punicao)
         em = discord.Embed(title='Registro de Punição',
                            color=config.roxo,
@@ -37,7 +37,7 @@ class Registro(discord.ui.Modal, title='Registro de Punição'):
                            f'**Razão:** {self.razao}\n')
 
         em.set_thumbnail(url=guild.icon)
-        em.set_footer(text=f'Registrado por {user}', icon_url=user.avatar)
+        em.set_footer(text=f'Registrado por {user}', icon_url=user.display_avatar.url)
         em.timestamp = datetime.datetime.now(tz=tz_brazil)
 
         await interaction.response.send_message(f'Registro enviado', embed=em, ephemeral=True)

@@ -1,13 +1,9 @@
 import discord
 import asyncio
-import pytz
 import config
 
 from datetime import datetime
 from discord.ext import commands
-
-
-tz_brazil = pytz.timezone('America/Sao_Paulo')
 
 
 class AlertaView(discord.ui.View):
@@ -15,7 +11,7 @@ class AlertaView(discord.ui.View):
         custom_id='Alertas_selector',
         min_values=0,
         max_values=12,
-        placeholder='Selecione seus pings de alertas',
+        placeholder='Selecione cargos que devem ser alterados',
         options=[
             discord.SelectOption(
                 label='Ajudante',
@@ -91,7 +87,7 @@ class AlertaView(discord.ui.View):
 
     async def callback(self, interaction: discord.Interaction, select: discord.ui.select):
         guild = interaction.guild
-        member = interaction.user
+        user = interaction.user
 
         await interaction.response.defer(ephemeral=True, thinking=True)
 
@@ -108,142 +104,40 @@ class AlertaView(discord.ui.View):
         drop = guild.get_role(config.dropExt)
         update = guild.get_role(config.update)
 
-        add = '\n**Adicionado:**'
-        mantem = '\n**Mantido:**'
-        removido = '\n**Removido:**'
+        roles_list = [ajudante, reator, catalisador, baro, forma, forma_umbra, lotus, mestre, sorteio, evento, drop, update]
+        values_list = ['ajudante', 'reator', 'catalisador', 'baro', 'forma', 'umbra', 'lotus', 'mestre', 'sorteio', 'evento', 'drops', 'update']
+        index_value = 0
 
-        if 'ajudante' in select.values:
-            if ajudante not in member.roles:
-                await member.add_roles(ajudante)
-                add += f'\n*+ {ajudante.mention}*'
-            else:
-                mantem += f'\n*~ {ajudante.mention}*'
-        else:
-            await member.remove_roles(ajudante)
-            removido += f'\n*- {ajudante.mention}*'
+        add = '**Adicionado:**'
+        mantem = '**Mantido:**'
+        removido = '**Removido:**'
 
+        for role in roles_list:
+            while index_value < len(roles_list)+1:
+                if values_list[index_value] in select.values:
+                    if roles_list[index_value] not in user.roles:
+                        await user.add_roles(roles_list[index_value])
+                        add += f'\n*+ {roles_list[index_value].mention}*'
+                    else:
+                        await user.remove_roles(roles_list[index_value])
+                        removido += f'\n*- {roles_list[index_value].mention}*'
+                else:
+                    if roles_list[index_value] in user.roles:
+                        mantem += f'\n*~ {roles_list[index_value].mention}*'
+                index_value += 1
+                break
 
-        if 'reator' in select.values:
-            if reator not in member.roles:
-                await member.add_roles(reator)
-                add += f'\n*+ {reator.mention}*'
-            else:
-                mantem += f'\n*~ {reator.mention}*'
-        else:
-            await member.remove_roles(reator)
-            removido += f'\n*- {reator.mention}*'
+        await interaction.edit_original_response(content=f'{"**Nenhum cargo adicionado**" if len(add)<17 else add}'
+        f'\n\n{"**Nenhum cargo removido**" if len(removido)<17 else removido}'
+        f'\n\n{"**Nenhum cargo mantido**" if len(mantem)<14 else mantem}')
 
-
-        if 'catalisador' in select.values:
-            if catalisador not in member.roles:
-                await member.add_roles(catalisador)
-                add += f'\n*+ {catalisador.mention}*'
-            else:
-                mantem += f'\n*~ {catalisador.mention}*'
-        else:
-            await member.remove_roles(catalisador)
-            removido += f'\n*- {catalisador.mention}*'
-
-
-        if 'baro' in select.values:
-            if baro not in member.roles:
-                await member.add_roles(baro)
-                add += f'\n*+ {baro.mention}*'
-            else:
-                mantem += f'\n*~ {baro.mention}*'
-        else:
-            await member.remove_roles(baro)
-            removido += f'\n*- {baro.mention}*'
-
-
-        if 'forma' in select.values:
-            if forma not in member.roles:
-                await member.add_roles(forma)
-                add += f'\n*+ {forma.mention}*'
-            else:
-                mantem += f'\n*~ {forma.mention}*'
-        else:
-            await member.remove_roles(forma)
-            removido += f'\n*- {forma.mention}*'
-
-
-        if 'umbra' in select.values:
-            if forma_umbra not in member.roles:
-                await member.add_roles(forma_umbra)
-                add += f'\n*+ {forma_umbra.mention}*'
-            else:
-                mantem += f'\n*~ {forma_umbra.mention}*'
-        else:
-            await member.remove_roles(forma_umbra)
-            removido += f'\n*- {forma_umbra.mention}*'
-
-
-        if 'lotus' in select.values:
-            if lotus not in member.roles:
-                await member.add_roles(lotus)
-                add += f'\n*+ {lotus.mention}*'
-            else:
-                mantem += f'\n*~ {lotus.mention}*'
-        else:
-            await member.remove_roles(lotus)
-            removido += f'\n*- {lotus.mention}*'
-
-        
-        if 'mestre' in select.values:
-            if mestre not in member.roles:
-                await member.add_roles(mestre)
-                add += f'\n*+ {mestre.mention}*'
-            else:
-                mantem += f'\n*~ {mestre.mention}*'
-        else:
-            await member.remove_roles(mestre)
-            removido += f'\n*- {mestre.mention}*'
-
-
-        if 'sorteio' in select.values:
-            if sorteio not in member.roles:
-                await member.add_roles(sorteio)
-                add += f'\n*+ {sorteio.mention}*'
-            else:
-                mantem += f'\n*~ {sorteio.mention}*'
-        else:
-            await member.remove_roles(sorteio)
-            removido += f'\n*- {sorteio.mention}*'
-
-
-        if 'evento' in select.values:
-            if evento not in member.roles:
-                await member.add_roles(evento)
-                add += f'\n*+ {evento.mention}*'
-            else:
-                mantem += f'\n*~ {evento.mention}*'
-        else:
-            await member.remove_roles()
-
-        if 'drops' in select.values:
-            if drop not in member.roles:
-                await member.add_roles(drop)
-                add += f'\n*+ {drop.mention}*'
-            else:
-                mantem += f'\n*~ {drop.mention}*'
-
-        if 'update' in select.values:
-            if update not in member.roles:
-                await member.add_roles(update)
-                add += f'\n*+ {update.mention}*'
-            else:
-                mantem += f'\n*~ {update.mention}*'
-
-
-        await interaction.edit_original_response(content=f'{"" if len(mantem)<14 else mantem} {"" if len(add)<17 else add} {"" if len(removido)<17 else removido}')
-        
 
 class SquadView(discord.ui.View):
     @discord.ui.select(
         custom_id='Squad_selector',
         min_values=0,
         max_values=18,
-        placeholder='Selecione seus pings de esquadrão',
+        placeholder='Selecione cargos que devem ser alterados',
         options=[
             discord.SelectOption(
                 label='Eidolon',
@@ -338,7 +232,7 @@ class SquadView(discord.ui.View):
             discord.SelectOption(
                 label='Novato',
                 value='novato',
-                description='Ping para farm de Kuva'),
+                description='Pingado quando querem ajudar novatos'),
 
             discord.SelectOption(
                 label='Caçada de Arconte',
@@ -347,10 +241,8 @@ class SquadView(discord.ui.View):
                 description='Ping para a Caçada de Arconte')])
                 
     async def callback(self, interaction: discord.Interaction, select: discord.ui.select):
-        member = interaction.user
+        user = interaction.user
         guild = interaction.guild
-
-        #print(member, select.labels)
 
         await interaction.response.defer(ephemeral=True, thinking=True)
 
@@ -373,231 +265,32 @@ class SquadView(discord.ui.View):
         novato = guild.get_role(config.novato)
         archon = guild.get_role(config.archon)
 
-        add = '\n**Adicionado:**'
-        mantem = '\n**Mantido:**'
-        removido = '\n**Removido:**'
+        roles_list = [eidolon, profit, relic, steel, index, recurso, arbitros, xp, railjack, deimos, santuario, lich, sisters, kuva, anjos, praga, novato, archon]
+        values_list = ['eidolon', 'profit', 'relic', 'steel', 'index', 'recurso', 'arbitros', 'xp', 'railjack', 'deimos', 'santuario', 'lich', 'sisters', 'kuva', 'anjos', 'praga', 'novato', 'archon']
+        index_value = 0
 
-        if 'eidolon' in select.values:
-            if eidolon not in member.roles:
-                await member.add_roles(eidolon)
-                add += f'\n*+ {eidolon.mention}*'
-            else:
-                mantem += f'\n*~ {eidolon.mention}*'
+        add = '**Adicionado:**'
+        mantem = '**Mantido:**'
+        removido = '**Removido:**'
 
-        if 'profit' in select.values:
-            if profit not in member.roles:
-                await member.add_roles(profit)
-                add += f'\n*+ {profit.mention}*'
-            else:
-                mantem += f'\n*~ {profit.mention}*'
+        for role in roles_list:
+            while index_value < len(roles_list)+1:
+                if values_list[index_value] in select.values:
+                    if roles_list[index_value] not in user.roles:
+                        await user.add_roles(roles_list[index_value])
+                        add += f'\n*+ {roles_list[index_value].mention}*'
+                    else:
+                        await user.remove_roles(roles_list[index_value])
+                        removido += f'\n*- {roles_list[index_value].mention}*'
+                else:
+                    if roles_list[index_value] in user.roles:
+                        mantem += f'\n*~ {roles_list[index_value].mention}*'
+                index_value += 1
+                break
 
-        if 'relic' in select.values:
-            if relic not in member.roles:
-                await member.add_roles(relic)
-                add += f'\n*+ {relic.mention}*'
-            else:
-                mantem += f'\n*~ {relic.mention}*'
-
-        if 'steel' in select.values:
-            if steel not in member.roles:
-                await member.add_roles(steel)
-                add += f'\n*+ {steel.mention}*'
-            else:
-                mantem += f'\n*~ {steel.mention}*'
-
-        if 'index' in select.values:
-            if index not in member.roles:
-                await member.add_roles(index)
-                add += f'\n*+ {index.mention}*'
-            else:
-                mantem += f'\n*~ {index.mention}*'
-
-        if 'recurso' in select.values:
-            if recurso not in member.roles:
-                await member.add_roles(recurso)
-                add += f'\n*+ {recurso.mention}*'
-            else:
-                mantem += f'\n*~ {recurso.mention}*'
-
-        if 'arbitros' in select.values:
-            if arbitros not in member.roles:
-                await member.add_roles(arbitros)
-                add += f'\n*+ {arbitros.mention}*'
-            else:
-                mantem += f'\n*~ {arbitros.mention}*'
-
-        if 'xp' in select.values:
-            if xp not in member.roles:
-                await member.add_roles(xp)
-                add += f'\n*+ {xp.mention}*'
-            else:
-                mantem += f'\n*~ {xp.mention}*'
-
-        if 'railjack' in select.values:
-            if railjack not in member.roles:
-                await member.add_roles(railjack)
-                add += f'\n*+ {railjack.mention}*'
-            else:
-                mantem += f'\n*~ {railjack.mention}*'
-
-        if 'deimos' in select.values:
-            if deimos not in member.roles:
-                await member.add_roles(deimos)
-                add += f'\n*+ {deimos.mention}*'
-            else:
-                mantem += f'\n*~ {deimos.mention}*'
-
-        if 'santuario' in select.values:
-            if santuario not in member.roles:
-                await member.add_roles(santuario)
-                add += f'\n*+ {santuario.mention}*'
-            else:
-                mantem += f'\n*~ {santuario.mention}*'
-
-        if 'lich' in select.values:
-            if lich not in member.roles:
-                await member.add_roles(lich)
-                add += f'\n*+ {lich.mention}*'
-            else:
-                mantem += f'\n*~ {lich.mention}*'
-
-        if 'sisters' in select.values:
-            if sisters not in member.roles:
-                await member.add_roles(sisters)
-                add += f'\n*+ {sisters.mention}*'
-            else:
-                mantem += f'\n*~ {sisters.mention}*'
-
-        if 'kuva' in select.values:
-            if kuva not in member.roles:
-                await member.add_roles(kuva)
-                add += f'\n*+ {kuva.mention}*'
-            else:
-                mantem += f'\n*~ {kuva.mention}*'
-
-        if 'anjos' in select.values:
-            if anjos not in member.roles:
-                await member.add_roles(anjos)
-                add += f'\n*+ {anjos.mention}*'
-            else:
-                mantem += f'\n*~ {anjos.mention}*'
-
-        if 'praga' in select.values:
-            if praga not in member.roles:
-                await member.add_roles(praga)
-                add += f'\n*+ {praga.mention}*'
-            else:
-                mantem += f'\n*~ {praga.mention}*'
-
-        if 'novato' in select.values:
-            if novato not in member.roles:
-                await member.add_roles(novato)
-                add += f'\n*+ {novato.mention}*'
-            else:
-                mantem += f'\n*~ {novato.mention}*'
-
-        if 'archon' in select.values:
-            if archon not in member.roles:
-                await member.add_roles(archon)
-                add += f'\n*+ {archon.mention}*'
-            else:
-                mantem += f'\n*~ {archon.mention}*'
-
-                            #########################################
-                            #########################################
-                            #########################################
-
-        if 'eidolon' not in select.values:
-            if eidolon  in member.roles:
-                await member.remove_roles(eidolon)
-                removido += f'\n*- {eidolon.mention}*'
-
-        if 'profit' not in select.values:
-            if profit  in member.roles:
-                await member.remove_roles(profit)
-                removido += f'\n*- {profit.mention}*'
-
-        if 'relic' not in select.values:
-            if relic  in member.roles:
-                await member.remove_roles(relic)
-                removido += f'\n*- {relic.mention}*'
-
-        if 'steel' not in select.values:
-            if steel  in member.roles:
-                await member.remove_roles(steel)
-                removido += f'\n*- {steel.mention}*'
-
-        if 'index' not in select.values:
-            if index  in member.roles:
-                await member.remove_roles(index)
-                removido += f'\n*- {index.mention}*'
-
-        if 'recurso' not in select.values:
-            if recurso  in member.roles:
-                await member.remove_roles(recurso)
-                removido += f'\n*- {recurso.mention}*'
-
-        if 'arbitros' not in select.values:
-            if arbitros  in member.roles:
-                await member.remove_roles(arbitros)
-                removido += f'\n*- {arbitros.mention}*'
-
-        if 'xp' not in select.values:
-            if xp  in member.roles:
-                await member.remove_roles(xp)
-                removido += f'\n*- {xp.mention}*'
-
-        if 'railjack' not in select.values:
-            if railjack  in member.roles:
-                await member.remove_roles(railjack)
-                removido += f'\n*- {railjack.mention}*'
-
-        if 'deimos' not in select.values:
-            if deimos  in member.roles:
-                await member.remove_roles(deimos)
-                removido += f'\n*- {deimos.mention}*'
-
-        if 'santuario' not in select.values:
-            if santuario  in member.roles:
-                await member.remove_roles(santuario)
-                removido += f'\n*- {santuario.mention}*'
-
-        if 'lich' not in select.values:
-            if lich  in member.roles:
-                await member.remove_roles(lich)
-                removido += f'\n*- {lich.mention}*'
-
-        if 'sisters' not in select.values:
-            if sisters  in member.roles:
-                await member.remove_roles(sisters)
-                removido += f'\n*- {sisters.mention}*'
-
-        if 'kuva' not in select.values:
-            if kuva  in member.roles:
-                await member.remove_roles(kuva)
-                removido += f'\n*- {kuva.mention}*'
-
-        if 'anjos' not in select.values:
-            if anjos  in member.roles:
-                await member.remove_roles(anjos)
-                removido += f'\n*- {anjos.mention}*'
-
-        if 'praga' not in select.values:
-            if praga  in member.roles:
-                await member.remove_roles(praga)
-                removido += f'\n*- {praga.mention}*'
-
-        if 'novato' not in select.values:
-            if novato  in member.roles:
-                await member.remove_roles(novato)
-                removido += f'\n*- {novato.mention}*'
-
-        if 'archon' not in select.values:
-            if archon  in member.roles:
-                await member.remove_roles(archon)
-                removido += f'\n*- {archon.mention}*'
-
-        await interaction.edit_original_response(content=f'{"" if len(mantem)<14 else mantem} {"" if len(add)<17 else add} {"" if len(removido)<17 else removido}')
+        await interaction.edit_original_response(content=f'{"**Nenhum cargo adicionado**" if len(add)<17 else add}'
+                                                 f'\n\n{"**Nenhum cargo removido**" if len(removido)<17 else removido}'
+                                                 f'\n\n{"**Nenhum cargo mantido**" if len(mantem)<14 else mantem}')
 
 
 class DiarioView(discord.ui.View):
@@ -605,7 +298,7 @@ class DiarioView(discord.ui.View):
         custom_id='diario_selector',
         min_values=0,
         max_values=6,
-        placeholder='Selecione seus pings diarios',
+        placeholder='Selecione cargos que devem ser alterados',
         options=[
             discord.SelectOption(
                 label='Cetus Dia',
@@ -645,10 +338,8 @@ class DiarioView(discord.ui.View):
         ])
     
     async def callback(self, interaction: discord.Interaction, select: discord.ui.select):
-        member = interaction.user
+        user = interaction.user
         guild = interaction.guild
-
-        #print(member, select.labels)
 
         await interaction.response.defer(ephemeral=True, thinking=True)
         
@@ -659,83 +350,32 @@ class DiarioView(discord.ui.View):
         frio = guild.get_role(config.frio)
         morno = guild.get_role(config.morno)
 
-        add = '\n**Adicionado:**'
-        mantem = '\n**Mantido:**'
-        removido = '\n**Removido:**'
+        roles_list = [dia, noite, vome, fass, frio, morno]
+        values_list = ['dia', 'noite', 'vome', 'fass', 'frio', 'morno']
+        index_value = 0
 
-        if 'dia' in select.values:
-            if dia not in member.roles:
-                await member.add_roles(dia)
-                add += f'\n*+ {dia.mention}*'
-            else:
-                mantem += f'\n*~ {dia.mention}*'
-        
-        if 'noite' in select.values:
-            if noite not in member.roles:
-                await member.add_roles(noite)
-                add += f'\n*+ {noite.mention}*'
-            else:
-                mantem += f'\n*~ {noite.mention}*'
+        add = '**Adicionado:**'
+        mantem = '**Mantido:**'
+        removido = '**Removido:**'
 
-        if 'vome' in select.values:
-            if vome not in member.roles:
-                await member.add_roles(vome)
-                add += f'\n*+ {vome.mention}*'
-            else:
-                mantem += f'\n*~ {vome.mention}*'
-        
-        if 'fass' in select.values:
-            if fass not in member.roles:
-                await member.add_roles(fass)
-                add += f'\n*+ {fass.mention}*'
-            else:
-                mantem += f'\n*~ {fass.mention}*'
-        
-        if 'frio' in select.values:
-            if frio not in member.roles:
-                await member.add_roles(frio)
-                add += f'\n*+ {frio.mention}*'
-            else:
-                mantem += f'\n*~ {frio.mention}*'
+        for role in roles_list:
+            while index_value < len(roles_list)+1:
+                if values_list[index_value] in select.values:
+                    if roles_list[index_value] not in user.roles:
+                        await user.add_roles(roles_list[index_value])
+                        add += f'\n*+ {roles_list[index_value].mention}*'
+                    else:
+                        await user.remove_roles(roles_list[index_value])
+                        removido += f'\n*- {roles_list[index_value].mention}*'
+                else:
+                    if roles_list[index_value] in user.roles:
+                        mantem += f'\n*~ {roles_list[index_value].mention}*'
+                index_value += 1
+                break
 
-        if 'morno' in select.values:
-            if morno not in member.roles:
-                await member.add_roles(morno)
-                add += f'\n*+ {morno.mention}*'
-            else:
-                mantem += f'\n*~ {morno.mention}*'
-
-        if 'dia' not in select.values:
-            if dia in member.roles:
-                await member.remove_roles(dia)
-                removido += f'\n*- {dia.mention}*'
-
-        if 'noite' not in select.values:
-            if noite in member.roles:
-                await member.remove_roles(noite)
-                removido += f'\n*- {noite.mention}*'
-
-        if 'vome' not in select.values:
-            if vome in member.roles:
-                await member.remove_roles(vome)
-                removido += f'\n*- {vome.mention}*'
-
-        if 'fass' not in select.values:
-            if fass in member.roles:
-                await member.remove_roles(fass)
-                removido += f'\n*- {fass.mention}*'
-
-        if 'frio' not in select.values:
-            if frio in member.roles:
-                await member.remove_roles(frio)
-                removido += f'\n*- {frio.mention}*'
-
-        if 'morno' not in select.values:
-            if morno in member.roles:
-                await member.remove_roles(morno)
-                removido += f'\n*- {morno.mention}*'
-
-        await interaction.edit_original_response(content=f'{"" if len(mantem)<14 else mantem} {"" if len(add)<17 else add} {"" if len(removido)<17 else removido}')
+        await interaction.edit_original_response(content=f'{"**Nenhum cargo adicionado**" if len(add)<17 else add}'
+                                                 f'\n\n{"**Nenhum cargo removido**" if len(removido)<17 else removido}'
+                                                 f'\n\n{"**Nenhum cargo mantido**" if len(mantem)<14 else mantem}')
 
 
 class PlataformaView(discord.ui.View):
@@ -743,7 +383,7 @@ class PlataformaView(discord.ui.View):
         custom_id='plataforma_selector',
         min_values=0,
         max_values=3,
-        placeholder='Selecione sua plataforma',
+        placeholder='Selecione cargos que devem ser alterados',
         options=[
             discord.SelectOption(
                 label='Pc',
@@ -765,9 +405,7 @@ class PlataformaView(discord.ui.View):
 
     async def callback(self, interaction: discord.Interaction, select: discord.ui.select):
         guild = interaction.guild
-        member = interaction.user
-
-        #print(member, select)
+        user = interaction.user
 
         await interaction.response.defer(ephemeral=True, thinking=True)
 
@@ -775,54 +413,38 @@ class PlataformaView(discord.ui.View):
         console = guild.get_role(config.console)
         mobile = guild.get_role(config.mobile)
 
-        add = '\n**Adicionado:**'
-        mantem = '\n**Mantido:**'
-        removido = '\n**Removido:**'
+        roles_list = [pc, console, mobile]
+        values_list = ['pc', 'console', 'mobile']
+        index_value = 0
 
-        if 'pc' in select.values:
-            if pc not in member.roles:
-                await member.add_roles(pc)
-                add += f'\n*+ {pc.mention}*'
-            else:
-                mantem += f'\n*~ {pc.mention}*'
+        add = '**Adicionado:**'
+        mantem = '**Mantido:**'
+        removido = '**Removido:**'
 
-        if 'console' in select.values:
-            if console not in member.roles:
-                await member.add_roles(console)
-                add += f'\n*+ {console.mention}*'
-            else:
-                mantem += f'\n*~ {console.mention}*'
+        for role in roles_list:
+            while index_value < len(roles_list)+1:
+                if values_list[index_value] in select.values:
+                    if roles_list[index_value] not in user.roles:
+                        await user.add_roles(roles_list[index_value])
+                        add += f'\n*+ {roles_list[index_value].mention}*'
+                    else:
+                        await user.remove_roles(roles_list[index_value])
+                        removido += f'\n*- {roles_list[index_value].mention}*'
+                else:
+                    if roles_list[index_value] in user.roles:
+                        mantem += f'\n*~ {roles_list[index_value].mention}*'
+                index_value += 1
+                break
 
-        if 'mobile' in select.values:
-            if mobile not in member.roles:
-                await member.add_roles(mobile)
-                add += f'\n*+ {mobile.mention}*'
-            else:
-                mantem += f'\n*~ {mobile.mention}*'
-
-        if 'pc' not in select.values:
-            if pc in member.roles:
-                await member.remove_roles(pc)
-                removido += f'\n*- {pc.mention}*'
-
-        if 'console' not in select.values:
-            if console in member.roles:
-                await member.remove_roles(console)
-                removido += f'\n*- {console.mention}*'
-
-        if 'mobile' not in select.values:
-            if mobile in member.roles:
-                await member.remove_roles(mobile)
-                removido += f'\n*- {mobile.mention}*'
-
-        await interaction.edit_original_response(content=f'{"" if len(mantem)<14 else mantem} {"" if len(add)<17 else add} {"" if len(removido)<17 else removido}')
-
+        await interaction.edit_original_response(content=f'{"**Nenhum cargo adicionado**" if len(add)<17 else add}'
+                                                 f'\n\n{"**Nenhum cargo removido**" if len(removido)<17 else removido}'
+                                                 f'\n\n{"**Nenhum cargo mantido**" if len(mantem)<14 else mantem}')
 
 class MemberView(discord.ui.View):
     @discord.ui.select(
         custom_id='member_selector',
         max_values=1,
-        placeholder='Selecione 1 cargo',
+        placeholder='Selecione seu cargo',
         options=[
             discord.SelectOption(
                 label='Os Tenno de Andromeda',
@@ -864,8 +486,6 @@ class MemberView(discord.ui.View):
         guild = interaction.guild
         member = interaction.user
 
-        #print(member, select.labels)
-
         await interaction.response.defer(ephemeral=True, thinking=True)
 
         tan = guild.get_role(config.andromeda)
@@ -890,97 +510,78 @@ class MemberView(discord.ui.View):
                 await member.add_roles(tan)
                 await member.add_roles(membro)
                 add += f'\n*+ {tan.mention}*'
-            else:
-                mantem += f'\n~ {tan.mention}'
+        else:
+            if tan in member.roles:
+                await member.remove_roles(tan)
+                removido += f'\n*- {tan.mention}*'
 
         if "ta" in select.values:
             if ta not in member.roles:
                 await member.add_roles(ta)
-                await member.add_roles(membro)
                 add += f'\n*+ {ta.mention}*'
-            else:
-                mantem += f'\n~ {ta.mention}'
+        else:
+            if ta in member.roles:
+                await member.remove_roles(ta)
+                removido += f'\n*- {ta.mention}*'
 
         if "tl" in select.values:
             if tl not in member.roles:
                 await member.add_roles(tl)
                 await member.add_roles(membro)
                 add += f'\n*+ {tl.mention}*'
-            else:
-                mantem += f'\n~ {tl.mention}'
+        else:
+            if tl in member.roles:
+                await member.remove_roles(tl)
+                removido += f'\n*- {tl.mention}*'
 
         if "to" in select.values:
             if to not in member.roles:
                 await member.add_roles(to)
                 await member.add_roles(membro)
                 add += f'\n*+ {to.mention}*'
-            else:
-                mantem += f'\n~ {to.mention}'
+        else:
+            if to in member.roles:
+                await member.remove_roles(to)
+                removido += f'\n*- {to.mention}*'
 
         if "visit" in select.values:
             if visitante not in member.roles:
-                await member.remove_roles(membro)
                 await member.add_roles(visitante)
+                await member.remove_roles(membro)
                 add += f'\n*+ {visitante.mention}*'
-            else:
-                mantem += f'\n~ {visitante.mention}'
+        else:
+            if visitante in member.roles:
+                await member.remove_roles(visitante)
+                removido += f'\n*- {visitante.mention}*'
 
         if "parti" in select.values:
             if participar not in member.roles:
-                await member.remove_roles(membro)
                 await member.add_roles(participar)
+                await member.remove_roles(membro)
                 add += f'\n*+ {participar.mention}*'
 
                 embedRec = discord.Embed(title="Recrutamento",
-                                            color=config.roxo,
-                                            description=f"Olá {member.mention}! Para um atendimento rapido nos informe seu nick no Warframe e um dos clãs abaixo para notificarmos um recrutador\n"
-                                            f"<:Andromeda:615250826474291211> - {tan.mention}\n"
-                                            f"<:Aquila:615250826289741834> - {ta.mention}\n"
-                                            f"<:Lyra:615250826260381735> - {tl.mention}\n"
-                                            f"<:Orion:615250826872619196> - {to.mention}\n\n"
-                                            f"||{member} - {member.id}||")
-                embedRec.timestamp = datetime.now(tz=tz_brazil)
+                                         color=config.roxo,
+                                         description=f"Olá {member.mention}! Para um atendimento rapido nos informe seu nick no Warframe e um dos clãs abaixo para notificarmos um recrutador\n"
+                                         f"<:Andromeda:615250826474291211> - {tan.mention}\n"
+                                         f"<:Aquila:615250826289741834> - {ta.mention}\n"
+                                         f"<:Lyra:615250826260381735> - {tl.mention}\n"
+                                         f"<:Orion:615250826872619196> - {to.mention}\n\n"
+                                         f"||{member} - {member.id}||")
+                embedRec.timestamp = datetime.now(tz=config.tz_brazil)
                 embedRec.set_footer(text=f"Bem vindo a {guild}")
                 embedRec.set_thumbnail(url=member.avatar.url)
 
                 await asyncio.sleep(1)
                 await channelRec.send(f"{member.mention} {recrutador.mention}")
                 await channelRec.send(embed=embedRec)
-            else:
-                mantem += f'\n~ {participar.mention}'
 
-        
-        if "tan" not in select.values:
-            if tan in member.roles:
-                await member.remove_roles(tan)
-                removido += f'\n*- {tan.mention}*'
-
-        if "ta" not in select.values:
-            if ta in member.roles:
-                await member.remove_roles(ta)
-                removido += f'\n*- {ta.mention}*'
-
-        if "tl" not in select.values:
-            if tl in member.roles:
-                await member.remove_roles(tl)
-                removido += f'\n*- {tl.mention}*'
-
-        if "to" not in select.values:
-            if to in member.roles:
-                await member.remove_roles(to)
-                removido += f'\n*- {to.mention}*'
-
-        if "visit" not in select.values:
-            if visitante in member.roles:
-                await member.remove_roles(visitante)
-                removido += f'\n*- {visitante.mention}*'
-
-        if "parti" not in select.values:
+        else:
             if participar in member.roles:
                 await member.remove_roles(participar)
                 removido += f'\n*- {participar.mention}*'
 
-        await interaction.edit_original_response(content=f'{"" if len(mantem)<14 else mantem} {"" if len(add)<17 else add} {"" if len(removido)<17 else removido}')
+        await interaction.edit_original_response(content=f'{"**Nenhum cargo adicionado**" if len(add)<17 else add}\n{"**Nenhum cargo removido**" if len(removido)<17 else removido}')
 
 
 class CargosSelector(commands.Cog):
@@ -1000,7 +601,7 @@ class CargosSelector(commands.Cog):
         self.bot.add_view(self.squad_view)
         self.bot.add_view(self.alerta_view)
 
-    @commands.command(name='view')
+    @commands.command(name='viewT')
     @commands.is_owner()
     async def membros_view(self, ctx: commands.Context):
         ''' Inicia os seletores de cargos '''
@@ -1026,12 +627,12 @@ class CargosSelector(commands.Cog):
         alertaEmbed = discord.Embed(color=config.roxo,
                                    description='Selecione os ping de alertas que deseja: <:reator:844951875791093760> <:catalisador:844951875371401247> <:BaroBitchPlease:716035316464615455> <:FormaUmbraiss:679970463153258512>')
 
+        await ctx.channel.send(embed=memberEmbed, view=MemberView())
+        await ctx.channel.send(embed=plataformaEmbed, view=PlataformaView())
+        await ctx.channel.send(embed=diarioEmbed, view=DiarioView())
+        await ctx.channel.send(embed=squadEmbed, view=SquadView())
+        await ctx.channel.send(embed=alertaEmbed, view=AlertaView())
         await ctx.message.delete()
-        await channel.send(embed=memberEmbed, view=MemberView())
-        await channel.send(embed=plataformaEmbed, view=PlataformaView())
-        await channel.send(embed=diarioEmbed, view=DiarioView())
-        await channel.send(embed=squadEmbed, view=SquadView())
-        await channel.send(embed=alertaEmbed, view=AlertaView())
 
 
 async def setup(bot):
