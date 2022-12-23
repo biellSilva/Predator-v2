@@ -55,10 +55,10 @@ class Predator(commands.Bot):
 bot = Predator(intents=discord.Intents.all())
 
 
-@bot.command()
+@bot.command(name='sync')
 @commands.guild_only()
 @commands.is_owner()
-async def synnc(ctx: Context, spec = None):
+async def sync(ctx: Context, spec = None):
     async with ctx.typing():
         if spec != None:
             if spec == "clear":
@@ -77,6 +77,17 @@ async def synnc(ctx: Context, spec = None):
 
         await ctx.reply(f'{len(sync)} comandos sincronizados {" " if spec == None else "para este servidor."}')
         return
+
+    
+@bot.command()
+@commands.is_owner()
+async def delete_file(ctx, *, path):
+    if os.path.exists(path):
+        os.remove(path)
+        await ctx.send(f'`{path}` deletado')
+    else:
+        await ctx.send(f'`{path}` não existe')
+    return
 
 
 dotenv.load_dotenv(dotenv.find_dotenv())
